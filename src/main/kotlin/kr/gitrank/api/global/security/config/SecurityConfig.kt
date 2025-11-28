@@ -17,29 +17,20 @@ class SecurityConfig(
 ) {
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        return http
-            .csrf { it.disable() }
-            .formLogin { it.disable() }
-            .httpBasic { it.disable() }
-            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
-            .authorizeHttpRequests { auth ->
-                auth
-                    // Public endpoints
-                    .requestMatchers("/api/v1/auth/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/rankings/**").permitAll()
-                    // Actuator & Swagger
-                    .requestMatchers("/actuator/**").permitAll()
-                    .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll()
-                    // H2 Console
-                    .requestMatchers("/h2-console/**").permitAll()
-                    // All other requests require authentication
-                    .anyRequest().authenticated()
-            }
-            .headers { headers ->
-                headers.frameOptions { it.sameOrigin() }
-            }
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
-            .build()
-    }
+    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain = http
+        .csrf { it.disable() }
+        .formLogin { it.disable() }
+        .httpBasic { it.disable() }
+        .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+        .authorizeHttpRequests {
+            it.requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/rankings/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
+                .anyRequest().authenticated()
+        }
+        .headers { it.frameOptions { frame -> frame.sameOrigin() } }
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+        .build()
 }

@@ -8,11 +8,7 @@ import org.springframework.web.reactive.function.client.WebClient
 class WebClientConfig {
 
     @Bean
-    fun webClient(): WebClient {
-        return WebClient.builder()
-            .codecs { configurer ->
-                configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024) // 10MB
-            }
-            .build()
-    }
+    fun webClient(): WebClient = WebClient.builder()
+        .codecs { it.defaultCodecs().maxInMemorySize(10 * 1024 * 1024) }
+        .build()
 }
