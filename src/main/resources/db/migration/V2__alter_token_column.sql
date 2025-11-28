@@ -1,0 +1,1 @@
+ALTER TABLE refresh_tokens MODIFY COLUMN token TEXT NOT NULL;
