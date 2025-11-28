@@ -41,15 +41,24 @@ class GitHubClient(
             .block()
     }.onFailure { log.error("Failed to fetch user", it) }.getOrNull()
 
-    fun fetchRepos(token: String, username: String): List<GitHubRepo> = runCatching {
-        webClient.get()
-            .uri("$API_URL/users/$username/repos?per_page=100&sort=updated")
-            .headers { it.setBearerAuth(token) }
-            .retrieve()
-            .bodyToFlux(GitHubRepo::class.java)
-            .collectList()
-            .block()
-    }.onFailure { log.error("Failed to fetch repos: $username", it) }.getOrNull() ?: emptyList()
+    fun fetchRepos(token: String): List<GitHubRepo> = runCatching {
+        val allRepos = mutableListOf<GitHubRepo>()
+        var page = 1
+        while (true) {
+            val repos = webClient.get()
+                .uri("$API_URL/user/repos?per_page=100&page=$page&affiliation=owner")
+                .headers { it.setBearerAuth(token) }
+                .retrieve()
+                .bodyToFlux(GitHubRepo::class.java)
+                .collectList()
+                .block() ?: break
+            if (repos.isEmpty()) break
+            allRepos.addAll(repos)
+            if (repos.size < 100) break
+            page++
+        }
+        allRepos
+    }.onFailure { log.error("Failed to fetch repos", it) }.getOrNull() ?: emptyList()
 
     fun fetchTotalContributions(token: String): Int =
         fetchContributionYears(token).sumOf { fetchYearlyContributions(token, it) }

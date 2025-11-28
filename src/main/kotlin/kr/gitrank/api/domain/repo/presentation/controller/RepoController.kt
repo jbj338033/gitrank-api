@@ -19,8 +19,8 @@ class RepoController(
 ) : RepoDocs {
 
     @GetMapping("/me")
-    override fun getMyRepos(): ResponseEntity<RepoListResponse> =
-        ResponseEntity.ok(RepoListResponse(repoService.getReposByUserId(securityHolder.getCurrentUserId()).map(RepoResponse::from)))
+    override fun getMyRepos(@RequestParam(required = false) query: String?): ResponseEntity<RepoListResponse> =
+        ResponseEntity.ok(RepoListResponse(repoService.getReposByUserId(securityHolder.getCurrentUserId(), query).map(RepoResponse::from)))
 
     @PatchMapping("/{id}/register")
     override fun updateRegister(@PathVariable id: UUID, @Valid @RequestBody request: UpdateRegisterRequest): ResponseEntity<RepoResponse> =

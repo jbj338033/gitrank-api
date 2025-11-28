@@ -14,14 +14,16 @@ import java.util.UUID
 @Tag(name = "Repositories", description = "Repository management APIs")
 interface RepoDocs {
 
-    @Operation(summary = "Get my repositories", description = "Get all repositories of the authenticated user")
+    @Operation(summary = "Get my repositories", description = "Get all repositories of the authenticated user with optional search")
     @ApiResponses(
         value = [
             ApiResponse(responseCode = "200", description = "Successfully retrieved repositories"),
             ApiResponse(responseCode = "401", description = "Unauthorized")
         ]
     )
-    fun getMyRepos(): ResponseEntity<RepoListResponse>
+    fun getMyRepos(
+        @Parameter(description = "Search query for repository name") query: String?
+    ): ResponseEntity<RepoListResponse>
 
     @Operation(summary = "Update repository registration", description = "Register or unregister a repository for ranking")
     @ApiResponses(

@@ -17,8 +17,8 @@ class RepoService(
     fun getRepo(id: UUID): Repo =
         repoRepository.findByIdAndDeletedAtIsNull(id) ?: throw BusinessException(RepoError.REPO_NOT_FOUND)
 
-    fun getReposByUserId(userId: UUID): List<Repo> =
-        repoRepository.findByUserIdOrderByStarsDesc(userId)
+    fun getReposByUserId(userId: UUID, query: String?): List<Repo> =
+        repoRepository.searchByUserIdAndQuery(userId, query)
 
     fun getRegisteredRepos(language: String?): List<Repo> =
         repoRepository.findRegisteredReposByLanguage(language)
