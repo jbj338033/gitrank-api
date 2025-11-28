@@ -17,7 +17,7 @@ class RefreshToken(
     @JoinColumn(name = "user_id", nullable = false)
     val user: User,
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, length = 512)
     val token: String,
 
     @Column(nullable = false)

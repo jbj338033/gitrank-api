@@ -34,7 +34,7 @@ CREATE TABLE repos (
 CREATE TABLE refresh_tokens (
     id BINARY(16) PRIMARY KEY,
     user_id BINARY(16) NOT NULL,
-    token VARCHAR(255) NOT NULL,
+    token VARCHAR(512) NOT NULL,
     expires_at DATETIME(6) NOT NULL,
     created_at DATETIME(6) NOT NULL,
     updated_at DATETIME(6) NOT NULL,
