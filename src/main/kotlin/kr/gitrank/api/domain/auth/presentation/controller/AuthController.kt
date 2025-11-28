@@ -21,25 +21,16 @@ class AuthController(
 ) : AuthDocs {
 
     @PostMapping("/github/callback")
-    override fun githubCallback(
-        @Valid @RequestBody request: GitHubCallbackRequest
-    ): ResponseEntity<TokenResponse> {
-        val response = authService.authenticateWithGitHub(request.code)
-        return ResponseEntity.ok(response)
-    }
+    override fun githubCallback(@Valid @RequestBody request: GitHubCallbackRequest): ResponseEntity<TokenResponse> =
+        ResponseEntity.ok(authService.loginWithGitHub(request.code))
 
     @PostMapping("/refresh")
-    override fun refresh(
-        @Valid @RequestBody request: RefreshRequest
-    ): ResponseEntity<TokenResponse> {
-        val response = authService.refresh(request.refreshToken)
-        return ResponseEntity.ok(response)
-    }
+    override fun refresh(@Valid @RequestBody request: RefreshRequest): ResponseEntity<TokenResponse> =
+        ResponseEntity.ok(authService.refresh(request.refreshToken))
 
     @PostMapping("/logout")
     override fun logout(): ResponseEntity<Unit> {
-        val userId = securityHolder.getCurrentUserId()
-        authService.logout(userId)
+        authService.logout(securityHolder.getCurrentUserId())
         return ResponseEntity.noContent().build()
     }
 }

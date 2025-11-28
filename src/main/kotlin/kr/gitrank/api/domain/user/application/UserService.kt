@@ -9,57 +9,28 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-@Transactional(readOnly = true)
 class UserService(
     private val userRepository: UserRepository
 ) {
 
-    fun getUserById(id: UUID): User {
-        return userRepository.findByIdAndDeletedAtIsNull(id)
-            ?: throw BusinessException(UserError.USER_NOT_FOUND)
-    }
-
-    fun getUserByGithubId(githubId: Long): User? {
-        return userRepository.findByGithubId(githubId)
-    }
+    fun getUser(id: UUID): User =
+        userRepository.findByIdAndDeletedAtIsNull(id) ?: throw BusinessException(UserError.USER_NOT_FOUND)
 
     @Transactional
-    fun createUser(githubId: Long, username: String, avatarUrl: String?): User {
-        val user = User(
-            githubId = githubId,
-            username = username,
-            avatarUrl = avatarUrl
-        )
-        return userRepository.save(user)
-    }
+    fun upsertUser(githubId: Long, username: String, avatarUrl: String?): User =
+        userRepository.findByGithubId(githubId)?.apply {
+            if (isDeleted) activate()
+            updateProfile(username, avatarUrl)
+        } ?: userRepository.save(User(githubId, username, avatarUrl))
 
     @Transactional
-    fun getOrCreateUser(githubId: Long, username: String, avatarUrl: String?): User {
-        return userRepository.findByGithubId(githubId)?.also { user ->
-            if (user.isDeleted) {
-                user.activate()
-            }
-            user.updateProfile(username, avatarUrl)
-        } ?: createUser(githubId, username, avatarUrl)
-    }
+    fun updateVisibility(userId: UUID, isVisible: Boolean): User =
+        getUser(userId).apply { updateVisibility(isVisible) }
 
     @Transactional
-    fun updateVisibility(userId: UUID, isVisible: Boolean): User {
-        val user = getUserById(userId)
-        user.updateVisibility(isVisible)
-        return user
-    }
+    fun delete(userId: UUID) = getUser(userId).delete()
 
     @Transactional
-    fun deleteUser(userId: UUID) {
-        val user = getUserById(userId)
-        user.delete()
-    }
-
-    @Transactional
-    fun updateUserStats(userId: UUID, totalCommits: Int, totalStars: Int, totalFollowers: Int): User {
-        val user = getUserById(userId)
-        user.updateStats(totalCommits, totalStars, totalFollowers)
-        return user
-    }
+    fun updateStats(userId: UUID, commits: Int, stars: Int, followers: Int): User =
+        getUser(userId).apply { updateStats(commits, stars, followers) }
 }

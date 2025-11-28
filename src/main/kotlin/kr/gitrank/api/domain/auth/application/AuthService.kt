@@ -12,94 +12,58 @@ import kr.gitrank.api.global.security.jwt.properties.JwtProperties
 import kr.gitrank.api.global.security.jwt.provider.JwtProvider
 import kr.gitrank.api.global.security.jwt.validator.JwtValidator
 import kr.gitrank.api.infra.github.GitHubClient
+import kr.gitrank.api.infra.github.GitHubSyncService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
-@Transactional(readOnly = true)
 class AuthService(
     private val refreshTokenRepository: RefreshTokenRepository,
     private val userService: UserService,
     private val gitHubClient: GitHubClient,
+    private val gitHubSyncService: GitHubSyncService,
     private val jwtProvider: JwtProvider,
     private val jwtValidator: JwtValidator,
     private val jwtProperties: JwtProperties
 ) {
 
     @Transactional
-    fun authenticateWithGitHub(code: String): TokenResponse {
-        val accessToken = gitHubClient.getAccessToken(code)
-            ?: throw BusinessException(AuthError.INVALID_AUTHORIZATION_CODE)
+    fun loginWithGitHub(code: String): TokenResponse {
+        val token = gitHubClient.fetchAccessToken(code) ?: throw BusinessException(AuthError.INVALID_AUTHORIZATION_CODE)
+        val githubUser = gitHubClient.fetchUser(token) ?: throw BusinessException(AuthError.GITHUB_AUTH_FAILED)
 
-        val gitHubUser = gitHubClient.getUser(accessToken)
-            ?: throw BusinessException(AuthError.GITHUB_AUTH_FAILED)
+        val user = userService.upsertUser(githubUser.id, githubUser.login, githubUser.avatarUrl)
+        gitHubSyncService.sync(user, token)
 
-        val user = userService.getOrCreateUser(
-            githubId = gitHubUser.id,
-            username = gitHubUser.login,
-            avatarUrl = gitHubUser.avatarUrl
-        )
-
-        val jwtAccessToken = jwtProvider.createAccessToken(user.id, user.username)
-        val jwtRefreshToken = jwtProvider.createRefreshToken(user.id, user.username)
-
-        saveRefreshToken(user.id, jwtRefreshToken)
-
-        return TokenResponse(
-            accessToken = jwtAccessToken,
-            refreshToken = jwtRefreshToken,
-            user = UserResponse.from(user)
-        )
+        val refreshedUser = userService.getUser(user.id)
+        return issueTokens(refreshedUser.id, refreshedUser.username).copy(user = UserResponse.from(refreshedUser))
     }
 
     @Transactional
-    fun refresh(refreshToken: String): TokenResponse {
-        if (!jwtValidator.validateToken(refreshToken, JwtType.REFRESH)) {
-            throw BusinessException(AuthError.INVALID_REFRESH_TOKEN)
-        }
+    fun refresh(token: String): TokenResponse {
+        require(jwtValidator.validateToken(token, JwtType.REFRESH)) { throw BusinessException(AuthError.INVALID_REFRESH_TOKEN) }
 
-        val storedToken = refreshTokenRepository.findByToken(refreshToken)
-            ?: throw BusinessException(AuthError.INVALID_REFRESH_TOKEN)
+        val stored = refreshTokenRepository.findByToken(token) ?: throw BusinessException(AuthError.INVALID_REFRESH_TOKEN)
+        require(!stored.isExpired() && !stored.isDeleted) { throw BusinessException(AuthError.EXPIRED_TOKEN) }
 
-        if (storedToken.isExpired() || storedToken.isDeleted) {
-            throw BusinessException(AuthError.EXPIRED_TOKEN)
-        }
-
-        val userId = jwtValidator.getUserId(refreshToken)
-        val user = userService.getUserById(userId)
-
-        // Invalidate old refresh token
-        storedToken.delete()
-
-        // Create new tokens
-        val newAccessToken = jwtProvider.createAccessToken(user.id, user.username)
-        val newRefreshToken = jwtProvider.createRefreshToken(user.id, user.username)
-
-        saveRefreshToken(user.id, newRefreshToken)
-
-        return TokenResponse(
-            accessToken = newAccessToken,
-            refreshToken = newRefreshToken
-        )
+        stored.delete()
+        val user = userService.getUser(jwtValidator.getUserId(token))
+        return issueTokens(user.id, user.username)
     }
 
     @Transactional
-    fun logout(userId: UUID) {
-        refreshTokenRepository.invalidateAllByUserId(userId)
-    }
+    fun logout(userId: UUID) = refreshTokenRepository.invalidateAllByUserId(userId)
 
-    private fun saveRefreshToken(userId: UUID, token: String) {
-        val user = userService.getUserById(userId)
+    private fun issueTokens(userId: UUID, username: String): TokenResponse {
+        val accessToken = jwtProvider.createAccessToken(userId, username)
+        val refreshToken = jwtProvider.createRefreshToken(userId, username)
+
+        val user = userService.getUser(userId)
         val expiresAt = LocalDateTime.now().plusSeconds(jwtProperties.refreshExpiry)
+        refreshTokenRepository.save(RefreshToken(user, refreshToken, expiresAt))
 
-        val refreshToken = RefreshToken(
-            user = user,
-            token = token,
-            expiresAt = expiresAt
-        )
-
-        refreshTokenRepository.save(refreshToken)
+        return TokenResponse(accessToken, refreshToken)
     }
 }

@@ -8,12 +8,7 @@ import kr.gitrank.api.domain.repo.presentation.response.RepoListResponse
 import kr.gitrank.api.domain.repo.presentation.response.RepoResponse
 import kr.gitrank.api.global.security.holder.SecurityHolder
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import java.util.UUID
 
 @RestController
@@ -24,21 +19,10 @@ class RepoController(
 ) : RepoDocs {
 
     @GetMapping("/me")
-    override fun getMyRepos(): ResponseEntity<RepoListResponse> {
-        val userId = securityHolder.getCurrentUserId()
-        val repos = repoService.getReposByUserId(userId)
-        return ResponseEntity.ok(
-            RepoListResponse(repos = repos.map { RepoResponse.from(it) })
-        )
-    }
+    override fun getMyRepos(): ResponseEntity<RepoListResponse> =
+        ResponseEntity.ok(RepoListResponse(repoService.getReposByUserId(securityHolder.getCurrentUserId()).map(RepoResponse::from)))
 
     @PatchMapping("/{id}/register")
-    override fun updateRegister(
-        @PathVariable id: UUID,
-        @Valid @RequestBody request: UpdateRegisterRequest
-    ): ResponseEntity<RepoResponse> {
-        val userId = securityHolder.getCurrentUserId()
-        val repo = repoService.updateRegister(id, userId, request.isRegistered)
-        return ResponseEntity.ok(RepoResponse.from(repo))
-    }
+    override fun updateRegister(@PathVariable id: UUID, @Valid @RequestBody request: UpdateRegisterRequest): ResponseEntity<RepoResponse> =
+        ResponseEntity.ok(RepoResponse.from(repoService.updateRegister(id, securityHolder.getCurrentUserId(), request.isRegistered)))
 }

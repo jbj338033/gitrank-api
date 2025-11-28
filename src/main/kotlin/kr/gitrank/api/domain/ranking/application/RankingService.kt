@@ -6,49 +6,19 @@ import kr.gitrank.api.global.response.CursorRequest
 import kr.gitrank.api.global.response.PageResponse
 import kr.gitrank.api.infra.redis.RankingCacheRepository
 import org.springframework.stereotype.Service
-import java.util.UUID
 
 @Service
 class RankingService(
     private val rankingCacheRepository: RankingCacheRepository
 ) {
 
-    fun getUserRankings(
-        sort: String,
-        period: String,
-        language: String?,
-        cursorRequest: CursorRequest
-    ): PageResponse<UserRankingResponse> {
-        val rankings = rankingCacheRepository.getUserRankings(
-            sort = sort,
-            period = period,
-            cursor = cursorRequest.cursor,
-            limit = cursorRequest.getEffectiveLimit()
-        )
+    fun getUserRankings(sort: String, period: String, language: String?, request: CursorRequest): PageResponse<UserRankingResponse> =
+        PageResponse.of(rankingCacheRepository.getUserRankings(sort, period, request.cursor, request.getEffectiveLimit()), request.limit)
 
-        return PageResponse.of(rankings, cursorRequest.limit)
-    }
+    fun getRepoRankings(sort: String, language: String?, request: CursorRequest): PageResponse<RepoRankingResponse> =
+        PageResponse.of(rankingCacheRepository.getRepoRankings(sort, language, request.cursor, request.getEffectiveLimit()), request.limit)
 
-    fun getRepoRankings(
-        sort: String,
-        language: String?,
-        cursorRequest: CursorRequest
-    ): PageResponse<RepoRankingResponse> {
-        val rankings = rankingCacheRepository.getRepoRankings(
-            sort = sort,
-            language = language,
-            cursor = cursorRequest.cursor,
-            limit = cursorRequest.getEffectiveLimit()
-        )
+    fun refreshUserRankings() = rankingCacheRepository.refreshUserRankings()
 
-        return PageResponse.of(rankings, cursorRequest.limit)
-    }
-
-    fun refreshUserRankings() {
-        rankingCacheRepository.refreshUserRankings()
-    }
-
-    fun refreshRepoRankings() {
-        rankingCacheRepository.refreshRepoRankings()
-    }
+    fun refreshRepoRankings() = rankingCacheRepository.refreshRepoRankings()
 }
