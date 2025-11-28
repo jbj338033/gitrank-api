@@ -28,7 +28,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-webflux") {
+        exclude(group = "io.netty", module = "netty-codec-http3")
+        exclude(group = "io.netty", module = "netty-codec-quic")
+        exclude(group = "io.netty", module = "netty-codec-classes-quic")
+    }
 
     // Kotlin
     implementation("tools.jackson.module:jackson-module-kotlin")
