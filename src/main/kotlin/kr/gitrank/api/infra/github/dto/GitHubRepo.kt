@@ -2,7 +2,7 @@ package kr.gitrank.api.infra.github.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class GitHubRepoDto(
+data class GitHubRepo(
     val id: Long,
     val name: String,
     @JsonProperty("full_name")
@@ -14,10 +14,10 @@ data class GitHubRepoDto(
     @JsonProperty("forks_count")
     val forksCount: Int = 0,
     val fork: Boolean = false,
-    val owner: GitHubRepoOwnerDto
+    val owner: GitHubRepoOwner
 )
 
-data class GitHubRepoOwnerDto(
+data class GitHubRepoOwner(
     val id: Long,
     val login: String
 )

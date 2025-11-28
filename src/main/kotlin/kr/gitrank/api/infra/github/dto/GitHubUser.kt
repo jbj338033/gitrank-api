@@ -2,7 +2,7 @@ package kr.gitrank.api.infra.github.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class GitHubUserDto(
+data class GitHubUser(
     val id: Long,
     val login: String,
     @JsonProperty("avatar_url")
@@ -13,7 +13,7 @@ data class GitHubUserDto(
     val publicRepos: Int = 0
 )
 
-data class GitHubAccessTokenResponse(
+data class GitHubAccessToken(
     @JsonProperty("access_token")
     val accessToken: String,
     @JsonProperty("token_type")
