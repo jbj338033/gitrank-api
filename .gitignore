@@ -41,3 +41,8 @@ out/
 
 ### Docs ###
 docs/
+
+### Environment ###
+.env
+.env.local
+.env.*.local
