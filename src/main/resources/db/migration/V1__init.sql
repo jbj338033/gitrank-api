@@ -6,7 +6,7 @@ CREATE TABLE users (
     total_commits INT NOT NULL DEFAULT 0,
     total_stars INT NOT NULL DEFAULT 0,
     total_followers INT NOT NULL DEFAULT 0,
-    is_visible BOOLEAN NOT NULL DEFAULT TRUE,
+    visible BOOLEAN NOT NULL DEFAULT TRUE,
     last_synced_at DATETIME(6),
     created_at DATETIME(6) NOT NULL,
     updated_at DATETIME(6) NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE repos (
     language VARCHAR(255),
     stars INT NOT NULL DEFAULT 0,
     forks INT NOT NULL DEFAULT 0,
-    is_registered BOOLEAN NOT NULL DEFAULT FALSE,
+    registered BOOLEAN NOT NULL DEFAULT FALSE,
     last_synced_at DATETIME(6),
     created_at DATETIME(6) NOT NULL,
     updated_at DATETIME(6) NOT NULL,
@@ -45,6 +45,6 @@ CREATE TABLE refresh_tokens (
 CREATE INDEX idx_users_github_id ON users(github_id);
 CREATE INDEX idx_repos_user_id ON repos(user_id);
 CREATE INDEX idx_repos_github_repo_id ON repos(github_repo_id);
-CREATE INDEX idx_repos_is_registered ON repos(is_registered);
+CREATE INDEX idx_repos_registered ON repos(registered);
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);

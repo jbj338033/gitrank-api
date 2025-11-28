@@ -48,7 +48,7 @@ class RankingCacheRepository(
 
     private fun fetchUserRankings(sort: String, cursor: UUID?, limit: Int): List<UserRankingResponse> {
         val users = userRepository.findAll()
-            .filter { !it.isDeleted && it.isVisible }
+            .filter { !it.isDeleted && it.visible }
             .sortedByDescending {
                 when (sort) {
                     "stars" -> it.totalStars
@@ -62,7 +62,7 @@ class RankingCacheRepository(
     }
 
     private fun fetchRepoRankings(sort: String, language: String?, cursor: UUID?, limit: Int): List<RepoRankingResponse> {
-        val repos = repoRepository.findByIsRegisteredTrueAndDeletedAtIsNull()
+        val repos = repoRepository.findByRegisteredTrueAndDeletedAtIsNull()
             .filter { language == null || it.language.equals(language, ignoreCase = true) }
             .sortedByDescending { if (sort == "forks") it.forks else it.stars }
 

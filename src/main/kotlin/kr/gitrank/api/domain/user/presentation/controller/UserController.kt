@@ -22,7 +22,7 @@ class UserController(
 
     @PatchMapping("/me/visibility")
     override fun updateVisibility(@Valid @RequestBody request: UpdateVisibilityRequest): ResponseEntity<UserResponse> =
-        ResponseEntity.ok(UserResponse.from(userService.updateVisibility(securityHolder.getCurrentUserId(), request.isVisible)))
+        ResponseEntity.ok(UserResponse.from(userService.updateVisibility(securityHolder.getCurrentUserId(), request.visible)))
 
     @DeleteMapping("/me")
     override fun deleteMe(): ResponseEntity<Unit> {

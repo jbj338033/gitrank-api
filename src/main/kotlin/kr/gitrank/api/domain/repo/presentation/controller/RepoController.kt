@@ -24,5 +24,5 @@ class RepoController(
 
     @PatchMapping("/{id}/register")
     override fun updateRegister(@PathVariable id: UUID, @Valid @RequestBody request: UpdateRegisterRequest): ResponseEntity<RepoResponse> =
-        ResponseEntity.ok(RepoResponse.from(repoService.updateRegister(id, securityHolder.getCurrentUserId(), request.isRegistered)))
+        ResponseEntity.ok(RepoResponse.from(repoService.updateRegister(id, securityHolder.getCurrentUserId(), request.registered)))
 }

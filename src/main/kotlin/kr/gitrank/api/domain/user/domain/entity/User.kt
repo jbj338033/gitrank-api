@@ -23,13 +23,13 @@ class User(
 
     var totalFollowers: Int = 0,
 
-    var isVisible: Boolean = true,
+    var visible: Boolean = true,
 
     var lastSyncedAt: LocalDateTime? = null
 ) : BaseEntity() {
 
-    fun updateVisibility(isVisible: Boolean) {
-        this.isVisible = isVisible
+    fun updateVisibility(visible: Boolean) {
+        this.visible = visible
     }
 
     fun updateProfile(username: String, avatarUrl: String?) {

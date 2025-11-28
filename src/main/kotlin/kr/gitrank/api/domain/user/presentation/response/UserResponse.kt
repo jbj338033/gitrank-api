@@ -12,7 +12,7 @@ data class UserResponse(
     val totalCommits: Int,
     val totalStars: Int,
     val totalFollowers: Int,
-    val isVisible: Boolean,
+    val visible: Boolean,
     val lastSyncedAt: LocalDateTime?,
     val createdAt: LocalDateTime
 ) {
@@ -26,7 +26,7 @@ data class UserResponse(
                 totalCommits = user.totalCommits,
                 totalStars = user.totalStars,
                 totalFollowers = user.totalFollowers,
-                isVisible = user.isVisible,
+                visible = user.visible,
                 lastSyncedAt = user.lastSyncedAt,
                 createdAt = user.createdAt
             )

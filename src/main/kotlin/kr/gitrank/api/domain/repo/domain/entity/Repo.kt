@@ -34,13 +34,13 @@ class Repo(
 
     var forks: Int = 0,
 
-    var isRegistered: Boolean = false,
+    var registered: Boolean = false,
 
     var lastSyncedAt: LocalDateTime? = null
 ) : BaseEntity() {
 
-    fun updateRegister(isRegistered: Boolean) {
-        this.isRegistered = isRegistered
+    fun updateRegister(registered: Boolean) {
+        this.registered = registered
     }
 
     fun updateStats(stars: Int, forks: Int) {

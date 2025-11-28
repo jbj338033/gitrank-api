@@ -13,7 +13,7 @@ data class RepoResponse(
     val language: String?,
     val stars: Int,
     val forks: Int,
-    val isRegistered: Boolean,
+    val registered: Boolean,
     val lastSyncedAt: LocalDateTime?,
     val createdAt: LocalDateTime
 ) {
@@ -28,7 +28,7 @@ data class RepoResponse(
                 language = repo.language,
                 stars = repo.stars,
                 forks = repo.forks,
-                isRegistered = repo.isRegistered,
+                registered = repo.registered,
                 lastSyncedAt = repo.lastSyncedAt,
                 createdAt = repo.createdAt
             )

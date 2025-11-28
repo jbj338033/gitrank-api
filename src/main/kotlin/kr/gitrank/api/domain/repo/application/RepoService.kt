@@ -40,9 +40,9 @@ class RepoService(
     } ?: repoRepository.save(Repo(githubRepoId, user, name, fullName, description, language, stars, forks))
 
     @Transactional
-    fun updateRegister(repoId: UUID, userId: UUID, isRegistered: Boolean): Repo =
+    fun updateRegister(repoId: UUID, userId: UUID, registered: Boolean): Repo =
         getRepo(repoId).also {
             require(it.user.id == userId) { throw BusinessException(RepoError.REPO_ACCESS_DENIED) }
-            it.updateRegister(isRegistered)
+            it.updateRegister(registered)
         }
 }

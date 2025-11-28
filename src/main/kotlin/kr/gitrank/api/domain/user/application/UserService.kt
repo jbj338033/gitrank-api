@@ -24,8 +24,8 @@ class UserService(
         } ?: userRepository.save(User(githubId, username, avatarUrl))
 
     @Transactional
-    fun updateVisibility(userId: UUID, isVisible: Boolean): User =
-        getUser(userId).apply { updateVisibility(isVisible) }
+    fun updateVisibility(userId: UUID, visible: Boolean): User =
+        getUser(userId).apply { updateVisibility(visible) }
 
     @Transactional
     fun delete(userId: UUID) = getUser(userId).delete()
