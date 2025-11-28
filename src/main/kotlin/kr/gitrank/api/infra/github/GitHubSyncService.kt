@@ -17,17 +17,25 @@ class GitHubSyncService(
 
     @Transactional
     fun sync(user: User, token: String) = runCatching {
-        val githubUser = gitHubClient.fetchUser(token) ?: return@runCatching
-        val repos = gitHubClient.fetchRepos(token).filterNot { it.fork }
-        val totalContributions = gitHubClient.fetchTotalContributions(token)
+        syncRepos(user, token)
+        syncStats(user, token)
+    }.onFailure { log.error("Sync failed: ${user.username}", it) }
 
-        userService.updateStats(user.id, totalContributions, repos.sumOf { it.stargazersCount }, githubUser.followers)
-
-        repos.forEach { repo ->
+    @Transactional
+    fun syncRepos(user: User, token: String) {
+        gitHubClient.fetchRepos(token).filterNot { it.fork }.forEach { repo ->
             repoService.upsertRepo(
                 user, repo.id, repo.name, repo.fullName,
                 repo.description, repo.language, repo.stargazersCount, repo.forksCount
             )
         }
-    }.onFailure { log.error("Sync failed: ${user.username}", it) }
+    }
+
+    @Transactional
+    fun syncStats(user: User, token: String) {
+        val githubUser = gitHubClient.fetchUser(token) ?: return
+        val repos = gitHubClient.fetchRepos(token).filterNot { it.fork }
+        val totalContributions = gitHubClient.fetchTotalContributions(token)
+        userService.updateStats(user.id, totalContributions, repos.sumOf { it.stargazersCount }, githubUser.followers)
+    }
 }

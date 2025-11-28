@@ -3,6 +3,7 @@ package kr.gitrank.api.domain.auth.application
 import kr.gitrank.api.domain.auth.domain.entity.RefreshToken
 import kr.gitrank.api.domain.auth.domain.error.AuthError
 import kr.gitrank.api.domain.auth.domain.repository.RefreshTokenRepository
+ import kr.gitrank.api.domain.auth.presentation.response.LoginEvent
 import kr.gitrank.api.domain.auth.presentation.response.TokenResponse
 import kr.gitrank.api.domain.user.application.UserService
 import kr.gitrank.api.domain.user.presentation.response.UserResponse
@@ -15,6 +16,8 @@ import kr.gitrank.api.infra.github.GitHubClient
 import kr.gitrank.api.infra.github.GitHubSyncService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Sinks
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -29,16 +32,40 @@ class AuthService(
     private val jwtProperties: JwtProperties
 ) {
 
-    @Transactional
-    fun loginWithGitHub(code: String): TokenResponse {
-        val token = gitHubClient.fetchAccessToken(code) ?: throw BusinessException(AuthError.INVALID_AUTHORIZATION_CODE)
-        val githubUser = gitHubClient.fetchUser(token) ?: throw BusinessException(AuthError.GITHUB_AUTH_FAILED)
+    fun loginWithGitHub(code: String): Flux<LoginEvent> {
+        val sink = Sinks.many().unicast().onBackpressureBuffer<LoginEvent>()
 
-        val user = userService.upsertUser(githubUser.id, githubUser.login, githubUser.avatarUrl)
-        gitHubSyncService.sync(user, token)
+        Thread.startVirtualThread {
+            runCatching {
+                sink.tryEmitNext(LoginEvent.progress("authenticating"))
 
-        val refreshedUser = userService.getUser(user.id)
-        return issueTokens(refreshedUser.id, refreshedUser.username).copy(user = UserResponse.from(refreshedUser))
+                val token = gitHubClient.fetchAccessToken(code)
+                    ?: throw BusinessException(AuthError.INVALID_AUTHORIZATION_CODE)
+                val githubUser = gitHubClient.fetchUser(token)
+                    ?: throw BusinessException(AuthError.GITHUB_AUTH_FAILED)
+
+                sink.tryEmitNext(LoginEvent.progress("creating_user"))
+                val user = userService.upsertUser(githubUser.id, githubUser.login, githubUser.avatarUrl)
+
+                sink.tryEmitNext(LoginEvent.progress("syncing_repos"))
+                gitHubSyncService.syncRepos(user, token)
+
+                sink.tryEmitNext(LoginEvent.progress("syncing_stats"))
+                gitHubSyncService.syncStats(user, token)
+
+                sink.tryEmitNext(LoginEvent.progress("issuing_tokens"))
+                val refreshedUser = userService.getUser(user.id)
+                val tokenResponse = issueTokens(refreshedUser.id, refreshedUser.username)
+                    .copy(user = UserResponse.from(refreshedUser))
+
+                sink.tryEmitNext(LoginEvent.complete(tokenResponse))
+            }.onFailure {
+                sink.tryEmitNext(LoginEvent.error(it.message ?: "Unknown error"))
+            }
+            sink.tryEmitComplete()
+        }
+
+        return sink.asFlux()
     }
 
     @Transactional
