@@ -40,7 +40,7 @@ out/
 .kotlin
 
 ### Docs ###
-docs/
+/docs/
 
 ### Environment ###
 .env
