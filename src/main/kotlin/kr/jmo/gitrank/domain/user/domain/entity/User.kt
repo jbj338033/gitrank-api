@@ -15,7 +15,6 @@ class User(
     var username: String,
     var avatarUrl: String? = null,
     var bio: String? = null,
-
     @Column(length = 512)
     var githubAccessToken: String? = null,
     @Column(length = 512)
@@ -48,7 +47,11 @@ class User(
         this.visible = visible
     }
 
-    fun updateProfile(username: String, avatarUrl: String?, bio: String?) {
+    fun updateProfile(
+        username: String,
+        avatarUrl: String?,
+        bio: String?,
+    ) {
         this.username = username
         this.avatarUrl = avatarUrl
         this.bio = bio

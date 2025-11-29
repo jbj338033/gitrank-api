@@ -18,13 +18,14 @@ data class UserRankingResponse(
         username = user.username,
         avatarUrl = user.avatarUrl,
         bio = user.bio,
-        commits = when (period) {
-            "yearly" -> user.yearlyCommits
-            "monthly" -> user.monthlyCommits
-            "weekly" -> user.weeklyCommits
-            "daily" -> user.dailyCommits
-            else -> user.commits
-        },
+        commits =
+            when (period) {
+                "yearly" -> user.yearlyCommits
+                "monthly" -> user.monthlyCommits
+                "weekly" -> user.weeklyCommits
+                "daily" -> user.dailyCommits
+                else -> user.commits
+            },
         stars = user.stars,
         followers = user.followers,
         rank = rank,
