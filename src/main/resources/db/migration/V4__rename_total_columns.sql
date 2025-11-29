@@ -1,0 +1,3 @@
+ALTER TABLE users CHANGE COLUMN total_commits commits INT NOT NULL DEFAULT 0;
+ALTER TABLE users CHANGE COLUMN total_stars stars INT NOT NULL DEFAULT 0;
+ALTER TABLE users CHANGE COLUMN total_followers followers INT NOT NULL DEFAULT 0;
