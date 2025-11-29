@@ -80,6 +80,7 @@ class RankingService(
                                 "yearly" -> it.yearlyCommits
                                 "monthly" -> it.monthlyCommits
                                 "weekly" -> it.weeklyCommits
+                                "daily" -> it.dailyCommits
                                 else -> it.commits
                             }
                     }
@@ -125,7 +126,7 @@ class RankingService(
         private const val MAX_CACHE_SIZE = 1000
         private val TTL = Duration.ofHours(1)
         private val USER_SORT_TYPES = listOf("commits", "stars", "followers")
-        private val USER_PERIODS = listOf("all", "yearly", "monthly", "weekly")
+        private val USER_PERIODS = listOf("all", "yearly", "monthly", "weekly", "daily")
         private val REPO_SORT_TYPES = listOf("stars", "forks")
     }
 }

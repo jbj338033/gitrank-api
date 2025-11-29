@@ -25,6 +25,7 @@ class User(
     var yearlyCommits: Int = 0,
     var monthlyCommits: Int = 0,
     var weeklyCommits: Int = 0,
+    var dailyCommits: Int = 0,
     var stars: Int = 0,
     var followers: Int = 0,
     var visible: Boolean = true,
@@ -58,6 +59,7 @@ class User(
         yearlyCommits: Int,
         monthlyCommits: Int,
         weeklyCommits: Int,
+        dailyCommits: Int,
         stars: Int,
         followers: Int,
     ) {
@@ -65,6 +67,7 @@ class User(
         this.yearlyCommits = yearlyCommits
         this.monthlyCommits = monthlyCommits
         this.weeklyCommits = weeklyCommits
+        this.dailyCommits = dailyCommits
         this.stars = stars
         this.followers = followers
         this.lastSyncedAt = LocalDateTime.now()

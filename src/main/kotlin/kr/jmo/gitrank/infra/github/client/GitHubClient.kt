@@ -109,8 +109,9 @@ class GitHubClient(
         val yearly = fetchContributionsBetween(token, now.withDayOfYear(1), now)
         val monthly = fetchContributionsBetween(token, now.withDayOfMonth(1), now)
         val weekly = fetchContributionsBetween(token, now.minusDays(now.dayOfWeek.value.toLong() - 1), now)
+        val daily = fetchContributionsBetween(token, now, now)
 
-        return ContributionStats(total, yearly, monthly, weekly)
+        return ContributionStats(total, yearly, monthly, weekly, daily)
     }
 
     private fun fetchContributionYears(token: String) =
@@ -172,6 +173,7 @@ class GitHubClient(
         val yearly: Int,
         val monthly: Int,
         val weekly: Int,
+        val daily: Int,
     )
 
     companion object {

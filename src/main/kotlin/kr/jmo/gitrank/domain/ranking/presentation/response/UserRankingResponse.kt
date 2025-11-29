@@ -22,6 +22,7 @@ data class UserRankingResponse(
             "yearly" -> user.yearlyCommits
             "monthly" -> user.monthlyCommits
             "weekly" -> user.weeklyCommits
+            "daily" -> user.dailyCommits
             else -> user.commits
         },
         stars = user.stars,

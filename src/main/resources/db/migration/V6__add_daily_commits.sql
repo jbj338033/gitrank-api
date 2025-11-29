@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN daily_commits INT NOT NULL DEFAULT 0;

@@ -15,7 +15,7 @@ interface RankingDocs {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     fun getUserRankings(
         @Parameter(description = "정렬 기준: commits, stars, followers") sort: String,
-        @Parameter(description = "기간: all, yearly, monthly, weekly") period: String,
+        @Parameter(description = "기간: all, yearly, monthly, weekly, daily") period: String,
         @Parameter(description = "페이지네이션 커서") cursor: UUID?,
         @Parameter(description = "조회 개수") limit: Int,
     ): PageResponse<UserRankingResponse>
