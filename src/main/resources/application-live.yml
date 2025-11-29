@@ -19,4 +19,10 @@ cors:
 
 logging:
   level:
-    kr.gitrank.api: INFO
+    kr.jmo.gitrank: INFO
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
