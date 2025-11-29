@@ -7,6 +7,7 @@ data class UserRankingResponse(
     val id: UUID,
     val username: String,
     val avatarUrl: String?,
+    val bio: String?,
     val commits: Int,
     val stars: Int,
     val followers: Int,
@@ -16,13 +17,13 @@ data class UserRankingResponse(
         id = user.id,
         username = user.username,
         avatarUrl = user.avatarUrl,
-        commits =
-            when (period) {
-                "yearly" -> user.yearlyCommits
-                "monthly" -> user.monthlyCommits
-                "weekly" -> user.weeklyCommits
-                else -> user.commits
-            },
+        bio = user.bio,
+        commits = when (period) {
+            "yearly" -> user.yearlyCommits
+            "monthly" -> user.monthlyCommits
+            "weekly" -> user.weeklyCommits
+            else -> user.commits
+        },
         stars = user.stars,
         followers = user.followers,
         rank = rank,

@@ -49,11 +49,10 @@ class AuthService(
                     gitHubClient.fetchUser(githubToken.accessToken)
                         ?: throw BusinessException(AuthError.GITHUB_AUTH_FAILED)
 
-                val user =
-                    userRepository.findByGithubId(githubUser.id)?.apply {
-                        if (isDeleted) activate()
-                        updateProfile(githubUser.login, githubUser.avatarUrl)
-                    } ?: User(githubUser.id, githubUser.login, githubUser.avatarUrl)
+                val user = userRepository.findByGithubId(githubUser.id)?.apply {
+                    if (isDeleted) activate()
+                    updateProfile(githubUser.login, githubUser.avatarUrl, githubUser.bio)
+                } ?: User(githubUser.id, githubUser.login, githubUser.avatarUrl, githubUser.bio)
 
                 user.updateGitHubTokens(
                     githubToken.accessToken,

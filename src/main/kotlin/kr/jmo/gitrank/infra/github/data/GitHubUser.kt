@@ -6,9 +6,12 @@ data class GitHubUser(
     val id: Long,
     val login: String,
     val name: String?,
+    val bio: String?,
     val followers: Int = 0,
+
     @JsonProperty("avatar_url")
     val avatarUrl: String?,
+
     @JsonProperty("public_repos")
     val publicRepos: Int = 0,
 )
