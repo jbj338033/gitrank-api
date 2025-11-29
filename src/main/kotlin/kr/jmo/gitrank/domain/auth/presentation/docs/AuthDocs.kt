@@ -18,7 +18,9 @@ interface AuthDocs {
         ApiResponse(responseCode = "200", description = "SSE 스트림으로 진행 상태 전송"),
         ApiResponse(responseCode = "401", description = "인증 실패"),
     )
-    fun githubCallback(@Parameter(description = "GitHub OAuth 코드") code: String): Flux<LoginEvent>
+    fun githubCallback(
+        @Parameter(description = "GitHub OAuth 코드") code: String,
+    ): Flux<LoginEvent>
 
     @Operation(summary = "토큰 갱신")
     @ApiResponses(

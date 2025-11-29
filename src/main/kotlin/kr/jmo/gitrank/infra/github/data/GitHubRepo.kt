@@ -9,13 +9,10 @@ data class GitHubRepo(
     val language: String?,
     val fork: Boolean = false,
     val owner: GitHubRepoOwner,
-
     @JsonProperty("full_name")
     val fullName: String,
-
     @JsonProperty("stargazers_count")
     val stars: Int = 0,
-
     @JsonProperty("forks_count")
     val forks: Int = 0,
 )

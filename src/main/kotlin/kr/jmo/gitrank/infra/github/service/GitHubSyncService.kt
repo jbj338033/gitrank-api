@@ -41,20 +41,29 @@ class GitHubSyncService(
     }
 
     @Transactional
-    fun syncRepos(userId: UUID, token: String) {
+    fun syncRepos(
+        userId: UUID,
+        token: String,
+    ) {
         val user = userRepository.findByIdOrNull(userId) ?: return
 
         syncRepos(user, token)
     }
 
     @Transactional
-    fun syncStats(userId: UUID, token: String) {
+    fun syncStats(
+        userId: UUID,
+        token: String,
+    ) {
         val user = userRepository.findByIdOrNull(userId) ?: return
 
         syncStats(user, token)
     }
 
-    private fun syncRepos(user: User, token: String) {
+    private fun syncRepos(
+        user: User,
+        token: String,
+    ) {
         val repos = gitHubClient.fetchRepos(token).filterNot { it.fork }
 
         repos.forEach { repo ->
@@ -63,12 +72,15 @@ class GitHubSyncService(
                 updateInfo(repo.name, repo.fullName, repo.description, repo.language)
                 updateStats(repo.stars, repo.forks)
             } ?: repoRepository.save(
-                Repo(repo.id, user, repo.name, repo.fullName, repo.description, repo.language, repo.stars, repo.forks)
+                Repo(repo.id, user, repo.name, repo.fullName, repo.description, repo.language, repo.stars, repo.forks),
             )
         }
     }
 
-    private fun syncStats(user: User, token: String) {
+    private fun syncStats(
+        user: User,
+        token: String,
+    ) {
         val githubUser = gitHubClient.fetchUser(token) ?: return
         val repos = gitHubClient.fetchRepos(token).filterNot { it.fork }
         val contributions = gitHubClient.fetchContributions(token)

@@ -21,9 +21,13 @@ class RepoService(
     }
 
     @Transactional
-    fun updateRegister(repoId: UUID, registered: Boolean) {
-        val repo = repoRepository.findByIdAndDeletedAtIsNull(repoId)
-            ?: throw BusinessException(RepoError.REPO_NOT_FOUND)
+    fun updateRegister(
+        repoId: UUID,
+        registered: Boolean,
+    ) {
+        val repo =
+            repoRepository.findByIdAndDeletedAtIsNull(repoId)
+                ?: throw BusinessException(RepoError.REPO_NOT_FOUND)
 
         if (!repo.isOwner(securityHolder.userId())) {
             throw BusinessException(RepoError.REPO_ACCESS_DENIED)

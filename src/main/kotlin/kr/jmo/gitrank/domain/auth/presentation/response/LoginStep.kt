@@ -1,6 +1,8 @@
 package kr.jmo.gitrank.domain.auth.presentation.response
 
-enum class LoginStep(val value: String) {
+enum class LoginStep(
+    val value: String,
+) {
     AUTHENTICATING("authenticating"),
     SYNCING("syncing"),
     ;

@@ -19,13 +19,20 @@ class RankingService(
 ) {
     private val logger = KotlinLogging.logger {}
 
-    fun getUserRankings(sort: String, period: String, cursor: Cursor): PageResponse<UserRankingResponse> {
+    fun getUserRankings(
+        sort: String,
+        period: String,
+        cursor: Cursor,
+    ): PageResponse<UserRankingResponse> {
         val rankings = fetchUserRankings(sort, period, cursor)
 
         return PageResponse.of(rankings, cursor.limit)
     }
 
-    fun getRepoRankings(sort: String, cursor: Cursor): PageResponse<RepoRankingResponse> {
+    fun getRepoRankings(
+        sort: String,
+        cursor: Cursor,
+    ): PageResponse<RepoRankingResponse> {
         val rankings = fetchRepoRankings(sort, cursor)
 
         return PageResponse.of(rankings, cursor.limit)
@@ -54,26 +61,35 @@ class RankingService(
         }
     }
 
-    private fun fetchUserRankings(sort: String, period: String, cursor: Cursor?): List<UserRankingResponse> {
+    private fun fetchUserRankings(
+        sort: String,
+        period: String,
+        cursor: Cursor?,
+    ): List<UserRankingResponse> {
         val limit = cursor?.getEffectiveLimit() ?: MAX_CACHE_SIZE
-        val users = userRepository.findAll()
-            .filter { !it.isDeleted && it.visible }
-            .sortedByDescending {
-                when (sort) {
-                    "stars" -> it.stars
-                    "followers" -> it.followers
-                    else -> when (period) {
-                        "yearly" -> it.yearlyCommits
-                        "monthly" -> it.monthlyCommits
-                        "weekly" -> it.weeklyCommits
-                        else -> it.commits
+        val users =
+            userRepository
+                .findAll()
+                .filter { !it.isDeleted && it.visible }
+                .sortedByDescending {
+                    when (sort) {
+                        "stars" -> it.stars
+                        "followers" -> it.followers
+                        else ->
+                            when (period) {
+                                "yearly" -> it.yearlyCommits
+                                "monthly" -> it.monthlyCommits
+                                "weekly" -> it.weeklyCommits
+                                else -> it.commits
+                            }
                     }
                 }
-            }
 
-        val start = cursor?.cursor
-            ?.let { c -> users.indexOfFirst { it.id == c }.takeIf { it >= 0 }?.plus(1) }
-            ?: 0
+        val start =
+            cursor
+                ?.cursor
+                ?.let { c -> users.indexOfFirst { it.id == c }.takeIf { it >= 0 }?.plus(1) }
+                ?: 0
 
         return users
             .drop(start)
@@ -81,14 +97,21 @@ class RankingService(
             .mapIndexed { i, user -> UserRankingResponse(user, period, start + i + 1) }
     }
 
-    private fun fetchRepoRankings(sort: String, cursor: Cursor?): List<RepoRankingResponse> {
+    private fun fetchRepoRankings(
+        sort: String,
+        cursor: Cursor?,
+    ): List<RepoRankingResponse> {
         val limit = cursor?.getEffectiveLimit() ?: MAX_CACHE_SIZE
-        val repos = repoRepository.findByRegisteredTrueAndDeletedAtIsNull()
-            .sortedByDescending { if (sort == "forks") it.forks else it.stars }
+        val repos =
+            repoRepository
+                .findByRegisteredTrueAndDeletedAtIsNull()
+                .sortedByDescending { if (sort == "forks") it.forks else it.stars }
 
-        val start = cursor?.cursor
-            ?.let { c -> repos.indexOfFirst { it.id == c }.takeIf { it >= 0 }?.plus(1) }
-            ?: 0
+        val start =
+            cursor
+                ?.cursor
+                ?.let { c -> repos.indexOfFirst { it.id == c }.takeIf { it >= 0 }?.plus(1) }
+                ?: 0
 
         return repos
             .drop(start)

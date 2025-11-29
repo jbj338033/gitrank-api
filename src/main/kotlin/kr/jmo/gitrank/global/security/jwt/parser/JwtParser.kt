@@ -13,11 +13,13 @@ class JwtParser(
     private val secretKey by lazy { Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray()) }
 
     fun getUserId(token: String): UUID {
-        val claims = Jwts.parser()
-            .verifyWith(secretKey)
-            .build()
-            .parseSignedClaims(token)
-            .payload
+        val claims =
+            Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .payload
 
         return UUID.fromString(claims.subject)
     }

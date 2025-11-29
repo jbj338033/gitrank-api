@@ -16,24 +16,27 @@ class UserService(
     private val gitHubSyncService: GitHubSyncService,
 ) {
     fun getMe(): UserResponse {
-        val user = userRepository.findByIdAndDeletedAtIsNull(securityHolder.userId())
-            ?: throw BusinessException(UserError.USER_NOT_FOUND)
+        val user =
+            userRepository.findByIdAndDeletedAtIsNull(securityHolder.userId())
+                ?: throw BusinessException(UserError.USER_NOT_FOUND)
 
         return UserResponse(user)
     }
 
     @Transactional
     fun updateVisibility(visible: Boolean) {
-        val user = userRepository.findByIdAndDeletedAtIsNull(securityHolder.userId())
-            ?: throw BusinessException(UserError.USER_NOT_FOUND)
+        val user =
+            userRepository.findByIdAndDeletedAtIsNull(securityHolder.userId())
+                ?: throw BusinessException(UserError.USER_NOT_FOUND)
 
         user.updateVisibility(visible)
     }
 
     @Transactional
     fun deleteMe() {
-        val user = userRepository.findByIdAndDeletedAtIsNull(securityHolder.userId())
-            ?: throw BusinessException(UserError.USER_NOT_FOUND)
+        val user =
+            userRepository.findByIdAndDeletedAtIsNull(securityHolder.userId())
+                ?: throw BusinessException(UserError.USER_NOT_FOUND)
 
         user.delete()
     }

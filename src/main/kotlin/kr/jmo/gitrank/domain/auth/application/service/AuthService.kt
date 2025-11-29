@@ -42,15 +42,18 @@ class AuthService(
             try {
                 sink.tryEmitNext(LoginEvent.Progress(LoginStep.AUTHENTICATING))
 
-                val githubToken = gitHubClient.fetchAccessToken(code)
-                    ?: throw BusinessException(AuthError.INVALID_AUTHORIZATION_CODE)
-                val githubUser = gitHubClient.fetchUser(githubToken.accessToken)
-                    ?: throw BusinessException(AuthError.GITHUB_AUTH_FAILED)
+                val githubToken =
+                    gitHubClient.fetchAccessToken(code)
+                        ?: throw BusinessException(AuthError.INVALID_AUTHORIZATION_CODE)
+                val githubUser =
+                    gitHubClient.fetchUser(githubToken.accessToken)
+                        ?: throw BusinessException(AuthError.GITHUB_AUTH_FAILED)
 
-                val user = userRepository.findByGithubId(githubUser.id)?.apply {
-                    if (isDeleted) activate()
-                    updateProfile(githubUser.login, githubUser.avatarUrl)
-                } ?: User(githubUser.id, githubUser.login, githubUser.avatarUrl)
+                val user =
+                    userRepository.findByGithubId(githubUser.id)?.apply {
+                        if (isDeleted) activate()
+                        updateProfile(githubUser.login, githubUser.avatarUrl)
+                    } ?: User(githubUser.id, githubUser.login, githubUser.avatarUrl)
 
                 user.updateGitHubTokens(
                     githubToken.accessToken,
@@ -66,7 +69,7 @@ class AuthService(
                 val accessToken = jwtProvider.createAccessToken(saved.id)
                 val refreshToken = jwtProvider.createRefreshToken(saved.id)
                 refreshTokenRepository.save(
-                    RefreshToken(saved.id, refreshToken, LocalDateTime.now().plusSeconds(jwtProperties.refreshExpiry))
+                    RefreshToken(saved.id, refreshToken, LocalDateTime.now().plusSeconds(jwtProperties.refreshExpiry)),
                 )
 
                 sink.tryEmitNext(LoginEvent.Complete(TokenResponse(accessToken, refreshToken, UserResponse(saved))))
@@ -84,22 +87,24 @@ class AuthService(
     fun refresh(token: String): TokenResponse {
         jwtValidator.validate(token, JwtType.REFRESH)
 
-        val stored = refreshTokenRepository.findByTokenAndDeletedAtIsNull(token)
-            ?: throw BusinessException(AuthError.INVALID_REFRESH_TOKEN)
+        val stored =
+            refreshTokenRepository.findByTokenAndDeletedAtIsNull(token)
+                ?: throw BusinessException(AuthError.INVALID_REFRESH_TOKEN)
 
         if (stored.isExpired()) {
             throw BusinessException(AuthError.EXPIRED_TOKEN)
         }
 
-        val user = userRepository.findByIdAndDeletedAtIsNull(jwtParser.getUserId(token))
-            ?: throw BusinessException(UserError.USER_NOT_FOUND)
+        val user =
+            userRepository.findByIdAndDeletedAtIsNull(jwtParser.getUserId(token))
+                ?: throw BusinessException(UserError.USER_NOT_FOUND)
 
         stored.delete()
 
         val accessToken = jwtProvider.createAccessToken(user.id)
         val refreshToken = jwtProvider.createRefreshToken(user.id)
         refreshTokenRepository.save(
-            RefreshToken(user.id, refreshToken, LocalDateTime.now().plusSeconds(jwtProperties.refreshExpiry))
+            RefreshToken(user.id, refreshToken, LocalDateTime.now().plusSeconds(jwtProperties.refreshExpiry)),
         )
 
         return TokenResponse(accessToken, refreshToken)

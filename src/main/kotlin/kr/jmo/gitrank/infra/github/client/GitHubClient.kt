@@ -1,12 +1,12 @@
 package kr.jmo.gitrank.infra.github.client
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kr.jmo.gitrank.infra.github.properties.GitHubProperties
 import kr.jmo.gitrank.infra.github.data.GitHubAccessToken
 import kr.jmo.gitrank.infra.github.data.GitHubRepo
 import kr.jmo.gitrank.infra.github.data.GitHubUser
 import kr.jmo.gitrank.infra.github.data.GraphQLResponse
 import kr.jmo.gitrank.infra.github.data.ViewerResponse
+import kr.jmo.gitrank.infra.github.properties.GitHubProperties
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -22,63 +22,73 @@ class GitHubClient(
 ) {
     private val logger = KotlinLogging.logger {}
 
-    fun fetchAccessToken(code: String) = runCatching {
-        webClient.post()
-            .uri(TOKEN_URL)
-            .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-            .bodyValue(mapOf(
-                "client_id" to properties.clientId,
-                "client_secret" to properties.clientSecret,
-                "code" to code,
-            ))
-            .retrieve()
-            .bodyToMono(GitHubAccessToken::class.java)
-            .block()
-    }.onFailure {
-        logger.error(it) { "Failed to fetch access token" }
-    }.getOrNull()
+    fun fetchAccessToken(code: String) =
+        runCatching {
+            webClient
+                .post()
+                .uri(TOKEN_URL)
+                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .bodyValue(
+                    mapOf(
+                        "client_id" to properties.clientId,
+                        "client_secret" to properties.clientSecret,
+                        "code" to code,
+                    ),
+                ).retrieve()
+                .bodyToMono(GitHubAccessToken::class.java)
+                .block()
+        }.onFailure {
+            logger.error(it) { "Failed to fetch access token" }
+        }.getOrNull()
 
-    fun refreshAccessToken(refreshToken: String) = runCatching {
-        webClient.post()
-            .uri(TOKEN_URL)
-            .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-            .bodyValue(mapOf(
-                "client_id" to properties.clientId,
-                "client_secret" to properties.clientSecret,
-                "grant_type" to "refresh_token",
-                "refresh_token" to refreshToken,
-            ))
-            .retrieve()
-            .bodyToMono(GitHubAccessToken::class.java)
-            .block()
-    }.onFailure {
-        logger.error(it) { "Failed to refresh access token" }
-    }.getOrNull()
+    fun refreshAccessToken(refreshToken: String) =
+        runCatching {
+            webClient
+                .post()
+                .uri(TOKEN_URL)
+                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .bodyValue(
+                    mapOf(
+                        "client_id" to properties.clientId,
+                        "client_secret" to properties.clientSecret,
+                        "grant_type" to "refresh_token",
+                        "refresh_token" to refreshToken,
+                    ),
+                ).retrieve()
+                .bodyToMono(GitHubAccessToken::class.java)
+                .block()
+        }.onFailure {
+            logger.error(it) { "Failed to refresh access token" }
+        }.getOrNull()
 
-    fun fetchUser(token: String) = runCatching {
-        webClient.get()
-            .uri("$API_URL/user")
-            .headers { it.setBearerAuth(token) }
-            .retrieve()
-            .bodyToMono(GitHubUser::class.java)
-            .block()
-    }.onFailure {
-        logger.error(it) { "Failed to fetch user" }
-    }.getOrNull()
+    fun fetchUser(token: String) =
+        runCatching {
+            webClient
+                .get()
+                .uri("$API_URL/user")
+                .headers { it.setBearerAuth(token) }
+                .retrieve()
+                .bodyToMono(GitHubUser::class.java)
+                .block()
+        }.onFailure {
+            logger.error(it) { "Failed to fetch user" }
+        }.getOrNull()
 
-    fun fetchRepos(token: String): List<GitHubRepo> {
-        return runCatching {
+    fun fetchRepos(token: String): List<GitHubRepo> =
+        runCatching {
             val allRepos = mutableListOf<GitHubRepo>()
             var page = 1
 
             while (true) {
-                val repos = webClient.get()
-                    .uri("$API_URL/user/repos?per_page=100&page=$page&affiliation=owner")
-                    .headers { it.setBearerAuth(token) }
-                    .retrieve()
-                    .bodyToFlux(GitHubRepo::class.java)
-                    .collectList()
-                    .block() ?: break
+                val repos =
+                    webClient
+                        .get()
+                        .uri("$API_URL/user/repos?per_page=100&page=$page&affiliation=owner")
+                        .headers { it.setBearerAuth(token) }
+                        .retrieve()
+                        .bodyToFlux(GitHubRepo::class.java)
+                        .collectList()
+                        .block() ?: break
 
                 if (repos.isEmpty()) break
                 allRepos.addAll(repos)
@@ -90,7 +100,6 @@ class GitHubClient(
         }.onFailure {
             logger.error(it) { "Failed to fetch repos" }
         }.getOrNull() ?: emptyList()
-    }
 
     fun fetchContributions(token: String): ContributionStats {
         val years = fetchContributionYears(token)
@@ -104,19 +113,25 @@ class GitHubClient(
         return ContributionStats(total, yearly, monthly, weekly)
     }
 
-    private fun fetchContributionYears(token: String) = runCatching {
-        val query = "query { viewer { contributionsCollection { contributionYears } } }"
+    private fun fetchContributionYears(token: String) =
+        runCatching {
+            val query = "query { viewer { contributionsCollection { contributionYears } } }"
 
-        graphql<ViewerResponse>(token, query)
-            ?.viewer
-            ?.contributionsCollection
-            ?.contributionYears ?: emptyList()
-    }.onFailure {
-        logger.error(it) { "Failed to fetch contribution years" }
-    }.getOrDefault(emptyList())
+            graphql<ViewerResponse>(token, query)
+                ?.viewer
+                ?.contributionsCollection
+                ?.contributionYears ?: emptyList()
+        }.onFailure {
+            logger.error(it) { "Failed to fetch contribution years" }
+        }.getOrDefault(emptyList())
 
-    private fun fetchContributionsBetween(token: String, from: LocalDate, to: LocalDate) = runCatching {
-        val query = """
+    private fun fetchContributionsBetween(
+        token: String,
+        from: LocalDate,
+        to: LocalDate,
+    ) = runCatching {
+        val query =
+            """
             query {
                 viewer {
                     contributionsCollection(from: "${from}T00:00:00Z", to: "${to}T23:59:59Z") {
@@ -124,7 +139,7 @@ class GitHubClient(
                     }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         graphql<ViewerResponse>(token, query)
             ?.viewer
@@ -135,11 +150,14 @@ class GitHubClient(
         logger.error(it) { "Failed to fetch contributions: $from ~ $to" }
     }.getOrDefault(0)
 
-    private fun yearEndDate(year: Int) =
-        if (year == Year.now().value) LocalDate.now() else LocalDate.of(year, 12, 31)
+    private fun yearEndDate(year: Int) = if (year == Year.now().value) LocalDate.now() else LocalDate.of(year, 12, 31)
 
-    private inline fun <reified T> graphql(token: String, query: String): T? =
-        webClient.post()
+    private inline fun <reified T> graphql(
+        token: String,
+        query: String,
+    ): T? =
+        webClient
+            .post()
             .uri("$API_URL/graphql")
             .headers { it.setBearerAuth(token) }
             .contentType(MediaType.APPLICATION_JSON)

@@ -12,10 +12,8 @@ import java.util.UUID
 class RefreshToken(
     @Column(nullable = false)
     val userId: UUID,
-
     @Column(nullable = false, length = 512)
     val token: String,
-
     @Column(nullable = false)
     val expiresAt: LocalDateTime,
 ) : BaseEntity() {

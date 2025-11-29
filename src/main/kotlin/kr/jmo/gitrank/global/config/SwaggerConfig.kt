@@ -15,16 +15,22 @@ class SwaggerConfig {
         val securitySchemeName = "Bearer Authentication"
 
         return OpenAPI()
-            .info(Info()
-                .title("GitRank API")
-                .description("GitHub Ranking API")
-                .version("1.0.0"))
-            .addSecurityItem(SecurityRequirement().addList(securitySchemeName))
-            .components(Components()
-                .addSecuritySchemes(securitySchemeName, SecurityScheme()
-                    .name(securitySchemeName)
-                    .type(SecurityScheme.Type.HTTP)
-                    .scheme("bearer")
-                    .bearerFormat("JWT")))
+            .info(
+                Info()
+                    .title("GitRank API")
+                    .description("GitHub Ranking API")
+                    .version("1.0.0"),
+            ).addSecurityItem(SecurityRequirement().addList(securitySchemeName))
+            .components(
+                Components()
+                    .addSecuritySchemes(
+                        securitySchemeName,
+                        SecurityScheme()
+                            .name(securitySchemeName)
+                            .type(SecurityScheme.Type.HTTP)
+                            .scheme("bearer")
+                            .bearerFormat("JWT"),
+                    ),
+            )
     }
 }

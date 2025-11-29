@@ -24,16 +24,19 @@ class GlobalExceptionHandler {
     fun handleMethodArgumentNotValidException(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
         logger.warn { "Validation failed: ${e.message}" }
 
-        val message = e.bindingResult.fieldErrors
-            .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
+        val message =
+            e.bindingResult.fieldErrors
+                .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
 
         return ResponseEntity
             .badRequest()
-            .body(ErrorResponse(
-                code = "INVALID_INPUT_VALUE",
-                status = 400,
-                message = message.ifEmpty { CommonError.INVALID_INPUT_VALUE.message },
-            ))
+            .body(
+                ErrorResponse(
+                    code = "INVALID_INPUT_VALUE",
+                    status = 400,
+                    message = message.ifEmpty { CommonError.INVALID_INPUT_VALUE.message },
+                ),
+            )
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)

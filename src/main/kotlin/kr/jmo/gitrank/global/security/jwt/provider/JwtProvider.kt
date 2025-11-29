@@ -18,11 +18,16 @@ class JwtProvider(
 
     fun createRefreshToken(userId: UUID) = createToken(userId, JwtType.REFRESH, jwtProperties.refreshExpiry)
 
-    private fun createToken(userId: UUID, type: JwtType, expiry: Long): String {
+    private fun createToken(
+        userId: UUID,
+        type: JwtType,
+        expiry: Long,
+    ): String {
         val now = Date()
         val expiryDate = Date(now.time + expiry * 1000)
 
-        return Jwts.builder()
+        return Jwts
+            .builder()
             .subject(userId.toString())
             .claim("type", type.name)
             .issuedAt(now)

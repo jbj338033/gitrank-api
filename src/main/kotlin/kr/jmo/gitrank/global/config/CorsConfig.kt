@@ -16,7 +16,8 @@ class CorsConfig(
     private val origins get() = allowedOrigins.split(",")
 
     override fun addCorsMappings(registry: CorsRegistry) {
-        registry.addMapping("/**")
+        registry
+            .addMapping("/**")
             .allowedOrigins(*origins.toTypedArray())
             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("*")
@@ -25,13 +26,17 @@ class CorsConfig(
     }
 
     @Bean
-    fun corsConfigurationSource() = UrlBasedCorsConfigurationSource().apply {
-        registerCorsConfiguration("/**", CorsConfiguration().apply {
-            allowedOrigins = origins
-            allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-            allowedHeaders = listOf("*")
-            allowCredentials = true
-            maxAge = 3600L
-        })
-    }
+    fun corsConfigurationSource() =
+        UrlBasedCorsConfigurationSource().apply {
+            registerCorsConfiguration(
+                "/**",
+                CorsConfiguration().apply {
+                    allowedOrigins = origins
+                    allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                    allowedHeaders = listOf("*")
+                    allowCredentials = true
+                    maxAge = 3600L
+                },
+            )
+        }
 }

@@ -16,7 +16,9 @@ interface RepoDocs {
         ApiResponse(responseCode = "200", description = "조회 성공"),
         ApiResponse(responseCode = "401", description = "인증 필요"),
     )
-    fun getMyRepos(@Parameter(description = "검색어") query: String?): List<RepoResponse>
+    fun getMyRepos(
+        @Parameter(description = "검색어") query: String?,
+    ): List<RepoResponse>
 
     @Operation(summary = "랭킹 등록 여부 수정")
     @ApiResponses(

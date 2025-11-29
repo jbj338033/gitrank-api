@@ -16,14 +16,11 @@ import java.util.UUID
 class Repo(
     @Column(unique = true, nullable = false)
     val githubRepoId: Long,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     val user: User,
-
     @Column(nullable = false)
     var name: String,
-
     @Column(nullable = false)
     var fullName: String,
     var description: String? = null,
@@ -39,13 +36,21 @@ class Repo(
         this.registered = registered
     }
 
-    fun updateStats(stars: Int, forks: Int) {
+    fun updateStats(
+        stars: Int,
+        forks: Int,
+    ) {
         this.stars = stars
         this.forks = forks
         this.lastSyncedAt = LocalDateTime.now()
     }
 
-    fun updateInfo(name: String, fullName: String, description: String?, language: String?) {
+    fun updateInfo(
+        name: String,
+        fullName: String,
+        description: String?,
+        language: String?,
+    ) {
         this.name = name
         this.fullName = fullName
         this.description = description

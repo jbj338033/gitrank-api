@@ -23,14 +23,20 @@ class SecurityConfig(
             .httpBasic { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
-                it.requestMatchers("/api/v1/auth/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/rankings/**").permitAll()
-                    .requestMatchers("/actuator/**").permitAll()
-                    .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll()
-                    .requestMatchers("/h2-console/**").permitAll()
-                    .anyRequest().authenticated()
-            }
-            .headers { it.frameOptions { frame -> frame.sameOrigin() } }
+                it
+                    .requestMatchers("/api/v1/auth/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/rankings/**")
+                    .permitAll()
+                    .requestMatchers("/actuator/**")
+                    .permitAll()
+                    .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html")
+                    .permitAll()
+                    .requestMatchers("/h2-console/**")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated()
+            }.headers { it.frameOptions { frame -> frame.sameOrigin() } }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
 
         return http.build()

@@ -16,18 +16,23 @@ class JwtValidator(
 ) {
     private val secretKey by lazy { Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray()) }
 
-    fun validate(token: String, expectedType: JwtType) {
-        val claims = try {
-            Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .payload
-        } catch (e: ExpiredJwtException) {
-            throw BusinessException(AuthError.EXPIRED_TOKEN)
-        } catch (e: JwtException) {
-            throw BusinessException(AuthError.INVALID_TOKEN)
-        }
+    fun validate(
+        token: String,
+        expectedType: JwtType,
+    ) {
+        val claims =
+            try {
+                Jwts
+                    .parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .payload
+            } catch (e: ExpiredJwtException) {
+                throw BusinessException(AuthError.EXPIRED_TOKEN)
+            } catch (e: JwtException) {
+                throw BusinessException(AuthError.INVALID_TOKEN)
+            }
 
         if (claims["type"] != expectedType.name) {
             throw BusinessException(AuthError.INVALID_TOKEN)
