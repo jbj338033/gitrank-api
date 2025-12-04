@@ -25,6 +25,8 @@ class User(
     var monthlyCommits: Int = 0,
     var weeklyCommits: Int = 0,
     var dailyCommits: Int = 0,
+    var currentStreak: Int = 0,
+    var longestStreak: Int = 0,
     var stars: Int = 0,
     var followers: Int = 0,
     var visible: Boolean = true,
@@ -63,6 +65,8 @@ class User(
         monthlyCommits: Int,
         weeklyCommits: Int,
         dailyCommits: Int,
+        currentStreak: Int,
+        longestStreak: Int,
         stars: Int,
         followers: Int,
     ) {
@@ -71,6 +75,8 @@ class User(
         this.monthlyCommits = monthlyCommits
         this.weeklyCommits = weeklyCommits
         this.dailyCommits = dailyCommits
+        this.currentStreak = currentStreak
+        this.longestStreak = longestStreak
         this.stars = stars
         this.followers = followers
         this.lastSyncedAt = LocalDateTime.now()
