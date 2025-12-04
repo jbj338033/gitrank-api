@@ -11,6 +11,8 @@ data class UserRankingResponse(
     val commits: Int,
     val stars: Int,
     val followers: Int,
+    val currentStreak: Int,
+    val longestStreak: Int,
     val rank: Int,
 ) {
     constructor(user: User, period: String, rank: Int) : this(
@@ -28,6 +30,8 @@ data class UserRankingResponse(
             },
         stars = user.stars,
         followers = user.followers,
+        currentStreak = user.currentStreak,
+        longestStreak = user.longestStreak,
         rank = rank,
     )
 }

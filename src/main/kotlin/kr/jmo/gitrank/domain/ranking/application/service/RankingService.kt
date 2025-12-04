@@ -75,6 +75,7 @@ class RankingService(
                     when (sort) {
                         "stars" -> it.stars
                         "followers" -> it.followers
+                        "streak" -> it.currentStreak
                         else ->
                             when (period) {
                                 "yearly" -> it.yearlyCommits
@@ -125,7 +126,7 @@ class RankingService(
         private const val REPO_KEY = "ranking:repos:"
         private const val MAX_CACHE_SIZE = 1000
         private val TTL = Duration.ofHours(1)
-        private val USER_SORT_TYPES = listOf("commits", "stars", "followers")
+        private val USER_SORT_TYPES = listOf("commits", "stars", "followers", "streak")
         private val USER_PERIODS = listOf("all", "yearly", "monthly", "weekly", "daily")
         private val REPO_SORT_TYPES = listOf("stars", "forks")
     }
