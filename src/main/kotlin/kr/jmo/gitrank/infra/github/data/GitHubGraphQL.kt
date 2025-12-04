@@ -19,4 +19,14 @@ data class ContributionsCollection(
 
 data class ContributionCalendar(
     val totalContributions: Int?,
+    val weeks: List<Week>?,
+)
+
+data class Week(
+    val contributionDays: List<ContributionDay>?,
+)
+
+data class ContributionDay(
+    val contributionCount: Int?,
+    val date: String?,
 )

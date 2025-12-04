@@ -111,7 +111,9 @@ class GitHubClient(
         val weekly = fetchContributionsBetween(token, now.minusDays(now.dayOfWeek.value.toLong() - 1), now)
         val daily = fetchContributionsBetween(token, now, now)
 
-        return ContributionStats(total, yearly, monthly, weekly, daily)
+        val (currentStreak, longestStreak) = fetchStreaks(token, years)
+
+        return ContributionStats(total, yearly, monthly, weekly, daily, currentStreak, longestStreak)
     }
 
     private fun fetchContributionYears(token: String) =
@@ -153,6 +155,84 @@ class GitHubClient(
 
     private fun yearEndDate(year: Int) = if (year == Year.now().value) LocalDate.now() else LocalDate.of(year, 12, 31)
 
+    private fun fetchStreaks(
+        token: String,
+        years: List<Int>,
+    ): Pair<Int, Int> =
+        runCatching {
+            val dayMap =
+                years
+                    .flatMap { year ->
+                        fetchContributionCalendar(token, LocalDate.of(year, 1, 1), yearEndDate(year))
+                    }.toMap()
+
+            val today = LocalDate.now()
+            var currentStreak = 0
+            var checkDate = if ((dayMap[today] ?: 0) > 0) today else today.minusDays(1)
+
+            while ((dayMap[checkDate] ?: 0) > 0) {
+                currentStreak++
+                checkDate = checkDate.minusDays(1)
+            }
+
+            var longestStreak = 0
+            var tempStreak = 0
+            var prevDate: LocalDate? = null
+
+            for ((date, count) in dayMap.entries.sortedBy { it.key }) {
+                if (count > 0) {
+                    tempStreak = if (prevDate == null || date == prevDate.plusDays(1)) tempStreak + 1 else 1
+                    prevDate = date
+                    longestStreak = maxOf(longestStreak, tempStreak)
+                } else {
+                    tempStreak = 0
+                    prevDate = null
+                }
+            }
+
+            currentStreak to longestStreak
+        }.onFailure {
+            logger.error(it) { "Failed to calculate streaks" }
+        }.getOrDefault(0 to 0)
+
+    private fun fetchContributionCalendar(
+        token: String,
+        from: LocalDate,
+        to: LocalDate,
+    ): List<Pair<LocalDate, Int>> =
+        runCatching {
+            val query =
+                """
+                query {
+                    viewer {
+                        contributionsCollection(from: "${from}T00:00:00Z", to: "${to}T23:59:59Z") {
+                            contributionCalendar {
+                                weeks {
+                                    contributionDays {
+                                        contributionCount
+                                        date
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                """.trimIndent()
+
+            graphql<ViewerResponse>(token, query)
+                ?.viewer
+                ?.contributionsCollection
+                ?.contributionCalendar
+                ?.weeks
+                ?.flatMap { week ->
+                    week.contributionDays?.map { day ->
+                        LocalDate.parse(day.date) to (day.contributionCount ?: 0)
+                    } ?: emptyList()
+                } ?: emptyList()
+        }.onFailure {
+            logger.error(it) { "Failed to fetch contribution calendar: $from ~ $to" }
+        }.getOrDefault(emptyList())
+
     private inline fun <reified T> graphql(
         token: String,
         query: String,
@@ -174,6 +254,8 @@ class GitHubClient(
         val monthly: Int,
         val weekly: Int,
         val daily: Int,
+        val currentStreak: Int,
+        val longestStreak: Int,
     )
 
     companion object {

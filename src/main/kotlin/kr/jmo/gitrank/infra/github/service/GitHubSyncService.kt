@@ -91,6 +91,8 @@ class GitHubSyncService(
             contributions.monthly,
             contributions.weekly,
             contributions.daily,
+            contributions.currentStreak,
+            contributions.longestStreak,
             repos.sumOf { it.stars },
             githubUser.followers,
         )
