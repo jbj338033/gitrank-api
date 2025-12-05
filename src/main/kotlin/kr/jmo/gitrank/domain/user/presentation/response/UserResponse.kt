@@ -7,6 +7,7 @@ data class UserResponse(
     val id: UUID,
     val githubId: Long,
     val username: String,
+    val name: String?,
     val avatarUrl: String?,
     val visible: Boolean,
 ) {
@@ -14,6 +15,7 @@ data class UserResponse(
         id = user.id,
         githubId = user.githubId,
         username = user.username,
+        name = user.name,
         avatarUrl = user.avatarUrl,
         visible = user.visible,
     )

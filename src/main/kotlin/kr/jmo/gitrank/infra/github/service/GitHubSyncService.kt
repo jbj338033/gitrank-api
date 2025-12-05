@@ -30,7 +30,7 @@ class GitHubSyncService(
             user.updateGitHubTokens(
                 newToken.accessToken,
                 newToken.refreshToken,
-                newToken.refreshTokenExpiresIn,
+                newToken.expiresIn,
             )
 
             token = newToken.accessToken

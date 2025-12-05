@@ -6,6 +6,7 @@ import java.util.UUID
 data class UserRankingResponse(
     val id: UUID,
     val username: String,
+    val name: String?,
     val avatarUrl: String?,
     val bio: String?,
     val commits: Int,
@@ -18,6 +19,7 @@ data class UserRankingResponse(
     constructor(user: User, period: String, rank: Int) : this(
         id = user.id,
         username = user.username,
+        name = user.name,
         avatarUrl = user.avatarUrl,
         bio = user.bio,
         commits =

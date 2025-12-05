@@ -52,13 +52,13 @@ class AuthService(
                 val user =
                     userRepository.findByGithubId(githubUser.id)?.apply {
                         if (isDeleted) activate()
-                        updateProfile(githubUser.login, githubUser.avatarUrl, githubUser.bio)
-                    } ?: User(githubUser.id, githubUser.login, githubUser.avatarUrl, githubUser.bio)
+                        updateProfile(githubUser.login, githubUser.name, githubUser.avatarUrl, githubUser.bio)
+                    } ?: User(githubUser.id, githubUser.login, githubUser.name, githubUser.avatarUrl, githubUser.bio)
 
                 user.updateGitHubTokens(
                     githubToken.accessToken,
                     githubToken.refreshToken,
-                    githubToken.refreshTokenExpiresIn,
+                    githubToken.expiresIn,
                 )
                 val saved = userRepository.save(user)
 

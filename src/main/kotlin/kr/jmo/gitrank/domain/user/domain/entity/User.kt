@@ -13,6 +13,7 @@ class User(
     val githubId: Long,
     @Column(nullable = false)
     var username: String,
+    var name: String? = null,
     var avatarUrl: String? = null,
     var bio: String? = null,
     @Column(length = 512)
@@ -51,10 +52,12 @@ class User(
 
     fun updateProfile(
         username: String,
+        name: String?,
         avatarUrl: String?,
         bio: String?,
     ) {
         this.username = username
+        this.name = name
         this.avatarUrl = avatarUrl
         this.bio = bio
     }
