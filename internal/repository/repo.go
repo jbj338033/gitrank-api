@@ -57,7 +57,8 @@ func (r *RepoRepository) GetByFullName(ctx context.Context, fullName string) (*m
 func (r *RepoRepository) GetRanking(ctx context.Context, repoID int64) (*model.RepoRanking, error) {
 	var rr model.RepoRanking
 	err := r.pool.QueryRow(ctx,
-		`SELECT repo_id, score, rank, calculated_at FROM repo_rankings WHERE repo_id = $1`, repoID,
+		`SELECT repo_id, score, (SELECT COUNT(*)+1 FROM repo_rankings WHERE score > rr.score) AS rank, calculated_at
+		 FROM repo_rankings rr WHERE rr.repo_id = $1`, repoID,
 	).Scan(&rr.RepoID, &rr.Score, &rr.Rank, &rr.CalculatedAt)
 	if err == pgx.ErrNoRows {
 		return nil, nil
@@ -98,7 +99,8 @@ func (r *RepoRepository) ListRanking(ctx context.Context, sort string, language 
 	}
 
 	query := fmt.Sprintf(`
-		SELECT rr.rank, r.full_name, r.description, r.language, r.stars, r.forks, r.watchers,
+		SELECT (SELECT COUNT(*)+1 FROM repo_rankings WHERE score > rr.score) AS rank,
+			   r.full_name, r.description, r.language, r.stars, r.forks, r.watchers,
 			   rr.score, u.login, u.avatar_url, r.id
 		FROM repo_rankings rr
 		JOIN repositories r ON rr.repo_id = r.id
