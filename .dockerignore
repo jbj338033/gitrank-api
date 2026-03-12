@@ -1,0 +1,9 @@
+.git
+.github
+.env
+.env.*
+.compose
+*.md
+Dockerfile
+compose.yml
+nginx.conf
