@@ -1,0 +1,12 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: gitrank-postgres
+    environment:
+      POSTGRES_DB: gitrank
+      POSTGRES_USER: gitrank
+      POSTGRES_PASSWORD: gitrank
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.compose/postgres/data:/var/lib/postgresql/data
