@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/jbj338033/gitrank-api/internal/config"
@@ -47,10 +46,6 @@ func NewAuthHandler(
 	}
 }
 
-func (h *AuthHandler) isSecure() bool {
-	return strings.HasPrefix(h.cfg.FrontendURL, "https://")
-}
-
 func sseEvent(w http.ResponseWriter, f http.Flusher, event string, data any) {
 	b, _ := json.Marshal(data)
 	fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, b)
@@ -70,8 +65,8 @@ func (h *AuthHandler) State(c *echo.Context) error {
 		Path:     "/api/auth",
 		MaxAge:   600,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   h.isSecure(),
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
 
 	return c.JSON(http.StatusOK, map[string]string{"state": state})
@@ -133,15 +128,14 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Code: "internal_error", Message: "failed to generate token"})
 	}
 
-	secure := h.isSecure()
 	c.SetCookie(&http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
 		MaxAge:   3600,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   secure,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
 	c.SetCookie(&http.Cookie{
 		Name:     "refresh_token",
@@ -149,8 +143,8 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 		Path:     "/api/auth",
 		MaxAge:   604800,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   secure,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
 
 	w := c.Response()
@@ -263,15 +257,14 @@ func (h *AuthHandler) Refresh(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Code: "internal_error", Message: "failed to generate token"})
 	}
 
-	secure := h.isSecure()
 	c.SetCookie(&http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
 		MaxAge:   3600,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   secure,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
 	c.SetCookie(&http.Cookie{
 		Name:     "refresh_token",
@@ -279,8 +272,8 @@ func (h *AuthHandler) Refresh(c *echo.Context) error {
 		Path:     "/api/auth",
 		MaxAge:   604800,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   secure,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
 
 	return c.NoContent(http.StatusNoContent)
