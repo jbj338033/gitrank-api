@@ -72,18 +72,3 @@ func (s *RankingService) RecalculateUserRepos(ctx context.Context, userID int64)
 	return err
 }
 
-func (s *RankingService) RecalculateAllRanks(ctx context.Context) error {
-	_, err := s.pool.Exec(ctx, `
-		UPDATE user_rankings SET rank = sub.r
-		FROM (SELECT user_id, RANK() OVER (ORDER BY score DESC) AS r FROM user_rankings) sub
-		WHERE user_rankings.user_id = sub.user_id`)
-	if err != nil {
-		return err
-	}
-
-	_, err = s.pool.Exec(ctx, `
-		UPDATE repo_rankings SET rank = sub.r
-		FROM (SELECT repo_id, RANK() OVER (ORDER BY score DESC) AS r FROM repo_rankings) sub
-		WHERE repo_rankings.repo_id = sub.repo_id`)
-	return err
-}
