@@ -119,9 +119,5 @@ func (c *Collector) collect(ctx context.Context) {
 		}
 	}
 
-	if err := c.rankService.RecalculateAllRanks(ctx); err != nil {
-		slog.Error("failed to recalculate all ranks", "error", err)
-	}
-
 	slog.Info("collection complete", "users", len(users))
 }
