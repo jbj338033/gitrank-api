@@ -75,8 +75,9 @@ func (r *UserRepository) UpdateSyncedAt(ctx context.Context, id int64) error {
 func (r *UserRepository) GetRanking(ctx context.Context, userID int64) (*model.UserRanking, error) {
 	var ur model.UserRanking
 	err := r.pool.QueryRow(ctx,
-		`SELECT user_id, total_commits, total_prs, total_issues, total_reviews, total_stars, total_forks, score, rank, calculated_at
-		 FROM user_rankings WHERE user_id = $1`, userID,
+		`SELECT user_id, total_commits, total_prs, total_issues, total_reviews, total_stars, total_forks, score,
+			(SELECT COUNT(*)+1 FROM user_rankings WHERE score > ur.score) AS rank, calculated_at
+		 FROM user_rankings ur WHERE ur.user_id = $1`, userID,
 	).Scan(&ur.UserID, &ur.TotalCommits, &ur.TotalPRs, &ur.TotalIssues,
 		&ur.TotalReviews, &ur.TotalStars, &ur.TotalForks, &ur.Score,
 		&ur.Rank, &ur.CalculatedAt)
@@ -110,7 +111,8 @@ func (r *UserRepository) ListRanking(ctx context.Context, sort string, cursor *m
 	}
 
 	query := fmt.Sprintf(`
-		SELECT ur.rank, u.login, u.name, u.avatar_url, ur.score,
+		SELECT (SELECT COUNT(*)+1 FROM user_rankings WHERE score > ur.score) AS rank,
+			   u.login, u.name, u.avatar_url, ur.score,
 			   ur.total_commits, ur.total_prs, ur.total_issues, ur.total_reviews,
 			   ur.total_stars, ur.total_forks, u.id
 		FROM user_rankings ur
