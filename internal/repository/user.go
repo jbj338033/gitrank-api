@@ -99,9 +99,16 @@ var validSortColumns = map[string]string{
 	"longest_streak": "sr.longest_streak",
 }
 
-var streakSortColumns = map[string]bool{
-	"current_streak": true,
-	"longest_streak": true,
+var rankExprs = map[string]string{
+	"score":          "(SELECT COUNT(*)+1 FROM user_rankings WHERE score > ur.score)",
+	"commits":        "(SELECT COUNT(*)+1 FROM user_rankings WHERE total_commits > ur.total_commits)",
+	"prs":            "(SELECT COUNT(*)+1 FROM user_rankings WHERE total_prs > ur.total_prs)",
+	"issues":         "(SELECT COUNT(*)+1 FROM user_rankings WHERE total_issues > ur.total_issues)",
+	"reviews":        "(SELECT COUNT(*)+1 FROM user_rankings WHERE total_reviews > ur.total_reviews)",
+	"stars":          "(SELECT COUNT(*)+1 FROM user_rankings WHERE total_stars > ur.total_stars)",
+	"forks":          "(SELECT COUNT(*)+1 FROM user_rankings WHERE total_forks > ur.total_forks)",
+	"current_streak": "(SELECT COUNT(*)+1 FROM streak_rankings WHERE current_streak > sr.current_streak)",
+	"longest_streak": "(SELECT COUNT(*)+1 FROM streak_rankings WHERE longest_streak > sr.longest_streak)",
 }
 
 func (r *UserRepository) ListRanking(ctx context.Context, sort string, cursor *model.Cursor, limit int) ([]model.UserRankingRow, error) {
@@ -110,7 +117,16 @@ func (r *UserRepository) ListRanking(ctx context.Context, sort string, cursor *m
 		col = "ur.score"
 	}
 
-	needStreakJoin := streakSortColumns[sort]
+	rankExpr, ok := rankExprs[sort]
+	if !ok {
+		rankExpr = rankExprs["score"]
+	}
+
+	isStreakSort := sort == "current_streak" || sort == "longest_streak"
+	join := "LEFT JOIN streak_rankings sr ON sr.user_id = u.id"
+	if isStreakSort {
+		join = "JOIN streak_rankings sr ON sr.user_id = u.id"
+	}
 
 	args := []any{limit}
 	where := ""
@@ -119,13 +135,8 @@ func (r *UserRepository) ListRanking(ctx context.Context, sort string, cursor *m
 		args = append(args, cursor.S, cursor.I)
 	}
 
-	streakJoin := "LEFT JOIN streak_rankings sr ON sr.user_id = u.id"
-	if !needStreakJoin {
-		streakJoin = "LEFT JOIN streak_rankings sr ON sr.user_id = u.id"
-	}
-
 	query := fmt.Sprintf(`
-		SELECT (SELECT COUNT(*)+1 FROM user_rankings WHERE score > ur.score) AS rank,
+		SELECT %s AS rank,
 			   u.login, u.name, u.avatar_url, ur.score,
 			   ur.total_commits, ur.total_prs, ur.total_issues, ur.total_reviews,
 			   ur.total_stars, ur.total_forks,
@@ -136,7 +147,7 @@ func (r *UserRepository) ListRanking(ctx context.Context, sort string, cursor *m
 		%s
 		%s
 		ORDER BY %s DESC, u.id DESC
-		LIMIT $1`, streakJoin, where, col)
+		LIMIT $1`, rankExpr, join, where, col)
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
