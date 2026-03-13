@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"log/slog"
+
 	"github.com/jbj338033/gitrank-api/internal/config"
 	"github.com/jbj338033/gitrank-api/internal/model"
 	"github.com/jbj338033/gitrank-api/internal/repository"
@@ -192,7 +194,9 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 	}
 
 	currentStreak, longestStreak := service.CalcStreaks(allDays, now)
-	_ = h.streakRepo.Upsert(ctx, ghUser.ID, currentStreak, longestStreak)
+	if err := h.streakRepo.Upsert(ctx, ghUser.ID, currentStreak, longestStreak); err != nil {
+		slog.Error("failed to save streak", "user", ghUser.Login, "error", err)
+	}
 
 	sseEvent(w, f, "status", statusMsg{Step: "repositories", Message: "레포지토리 수집 중..."})
 
@@ -224,8 +228,12 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 
 	sseEvent(w, f, "status", statusMsg{Step: "ranking", Message: "랭킹 계산 중..."})
 
-	_ = h.rankService.RecalculateUser(ctx, ghUser.ID)
-	_ = h.rankService.RecalculateUserRepos(ctx, ghUser.ID)
+	if err := h.rankService.RecalculateUser(ctx, ghUser.ID); err != nil {
+		slog.Error("failed to recalculate user ranking", "user", ghUser.Login, "error", err)
+	}
+	if err := h.rankService.RecalculateUserRepos(ctx, ghUser.ID); err != nil {
+		slog.Error("failed to recalculate repo rankings", "user", ghUser.Login, "error", err)
+	}
 	_ = h.userRepo.UpdateSyncedAt(ctx, ghUser.ID)
 
 	return h.finishSSE(w, f, ghUser)
