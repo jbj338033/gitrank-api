@@ -14,6 +14,7 @@ type Collector struct {
 	userRepo    *repository.UserRepository
 	contribRepo *repository.ContributionRepository
 	repoRepo    *repository.RepoRepository
+	streakRepo  *repository.StreakRepository
 	ghService   *service.GitHubService
 	authService *service.AuthService
 	rankService *service.RankingService
@@ -23,6 +24,7 @@ func NewCollector(
 	userRepo *repository.UserRepository,
 	contribRepo *repository.ContributionRepository,
 	repoRepo *repository.RepoRepository,
+	streakRepo *repository.StreakRepository,
 	ghService *service.GitHubService,
 	authService *service.AuthService,
 	rankService *service.RankingService,
@@ -31,6 +33,7 @@ func NewCollector(
 		userRepo:    userRepo,
 		contribRepo: contribRepo,
 		repoRepo:    repoRepo,
+		streakRepo:  streakRepo,
 		ghService:   ghService,
 		authService: authService,
 		rankService: rankService,
@@ -69,7 +72,7 @@ func (c *Collector) collect(ctx context.Context) {
 			continue
 		}
 
-		contributions, err := c.ghService.GetContributions(ctx, token, user.Login)
+		contributions, currentStreak, longestStreak, err := c.ghService.GetContributions(ctx, token, user.Login)
 		if err != nil {
 			slog.Error("failed to fetch contributions", "user", user.Login, "error", err)
 			continue
@@ -78,6 +81,10 @@ func (c *Collector) collect(ctx context.Context) {
 		if err := c.contribRepo.UpsertMany(ctx, user.ID, contributions); err != nil {
 			slog.Error("failed to upsert contributions", "user", user.Login, "error", err)
 			continue
+		}
+
+		if err := c.streakRepo.Upsert(ctx, user.ID, currentStreak, longestStreak); err != nil {
+			slog.Error("failed to upsert streak", "user", user.Login, "error", err)
 		}
 
 		repos, err := c.ghService.GetRepositories(ctx, token, user.Login)
