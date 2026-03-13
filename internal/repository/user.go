@@ -88,13 +88,20 @@ func (r *UserRepository) GetRanking(ctx context.Context, userID int64) (*model.U
 }
 
 var validSortColumns = map[string]string{
-	"score":   "ur.score",
-	"commits": "ur.total_commits",
-	"prs":     "ur.total_prs",
-	"issues":  "ur.total_issues",
-	"reviews": "ur.total_reviews",
-	"stars":   "ur.total_stars",
-	"forks":   "ur.total_forks",
+	"score":          "ur.score",
+	"commits":        "ur.total_commits",
+	"prs":            "ur.total_prs",
+	"issues":         "ur.total_issues",
+	"reviews":        "ur.total_reviews",
+	"stars":          "ur.total_stars",
+	"forks":          "ur.total_forks",
+	"current_streak": "sr.current_streak",
+	"longest_streak": "sr.longest_streak",
+}
+
+var streakSortColumns = map[string]bool{
+	"current_streak": true,
+	"longest_streak": true,
 }
 
 func (r *UserRepository) ListRanking(ctx context.Context, sort string, cursor *model.Cursor, limit int) ([]model.UserRankingRow, error) {
@@ -103,6 +110,8 @@ func (r *UserRepository) ListRanking(ctx context.Context, sort string, cursor *m
 		col = "ur.score"
 	}
 
+	needStreakJoin := streakSortColumns[sort]
+
 	args := []any{limit}
 	where := ""
 	if cursor != nil {
@@ -110,16 +119,24 @@ func (r *UserRepository) ListRanking(ctx context.Context, sort string, cursor *m
 		args = append(args, cursor.S, cursor.I)
 	}
 
+	streakJoin := "LEFT JOIN streak_rankings sr ON sr.user_id = u.id"
+	if !needStreakJoin {
+		streakJoin = "LEFT JOIN streak_rankings sr ON sr.user_id = u.id"
+	}
+
 	query := fmt.Sprintf(`
 		SELECT (SELECT COUNT(*)+1 FROM user_rankings WHERE score > ur.score) AS rank,
 			   u.login, u.name, u.avatar_url, ur.score,
 			   ur.total_commits, ur.total_prs, ur.total_issues, ur.total_reviews,
-			   ur.total_stars, ur.total_forks, u.id
+			   ur.total_stars, ur.total_forks,
+			   COALESCE(sr.current_streak, 0), COALESCE(sr.longest_streak, 0),
+			   u.id
 		FROM user_rankings ur
 		JOIN users u ON ur.user_id = u.id
 		%s
+		%s
 		ORDER BY %s DESC, u.id DESC
-		LIMIT $1`, where, col)
+		LIMIT $1`, streakJoin, where, col)
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -132,7 +149,9 @@ func (r *UserRepository) ListRanking(ctx context.Context, sort string, cursor *m
 		var row model.UserRankingRow
 		if err := rows.Scan(&row.Rank, &row.Login, &row.Name, &row.AvatarURL, &row.Score,
 			&row.TotalCommits, &row.TotalPRs, &row.TotalIssues, &row.TotalReviews,
-			&row.TotalStars, &row.TotalForks, &row.UserID); err != nil {
+			&row.TotalStars, &row.TotalForks,
+			&row.CurrentStreak, &row.LongestStreak,
+			&row.UserID); err != nil {
 			return nil, err
 		}
 		results = append(results, row)
