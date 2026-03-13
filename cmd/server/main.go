@@ -46,12 +46,13 @@ func main() {
 	userRepo := repository.NewUserRepository(pool)
 	repoRepo := repository.NewRepoRepository(pool)
 	contribRepo := repository.NewContributionRepository(pool)
+	streakRepo := repository.NewStreakRepository(pool)
 
-	authHandler := handler.NewAuthHandler(cfg, authService, ghService, userRepo, contribRepo, repoRepo, rankService)
-	userHandler := handler.NewUserHandler(userRepo, contribRepo, repoRepo, ghService, authService, rankService)
+	authHandler := handler.NewAuthHandler(cfg, authService, ghService, userRepo, contribRepo, repoRepo, streakRepo, rankService)
+	userHandler := handler.NewUserHandler(userRepo, contribRepo, repoRepo, streakRepo, ghService, authService, rankService)
 	repoHandler := handler.NewRepoHandler(repoRepo, userRepo, rankService)
 
-	collector := worker.NewCollector(userRepo, contribRepo, repoRepo, ghService, authService, rankService)
+	collector := worker.NewCollector(userRepo, contribRepo, repoRepo, streakRepo, ghService, authService, rankService)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go collector.Start(ctx)

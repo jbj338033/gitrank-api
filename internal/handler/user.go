@@ -16,6 +16,7 @@ type UserHandler struct {
 	userRepo    *repository.UserRepository
 	contribRepo *repository.ContributionRepository
 	repoRepo    *repository.RepoRepository
+	streakRepo  *repository.StreakRepository
 	ghService   *service.GitHubService
 	authService *service.AuthService
 	rankService *service.RankingService
@@ -25,6 +26,7 @@ func NewUserHandler(
 	userRepo *repository.UserRepository,
 	contribRepo *repository.ContributionRepository,
 	repoRepo *repository.RepoRepository,
+	streakRepo *repository.StreakRepository,
 	ghService *service.GitHubService,
 	authService *service.AuthService,
 	rankService *service.RankingService,
@@ -33,6 +35,7 @@ func NewUserHandler(
 		userRepo:    userRepo,
 		contribRepo: contribRepo,
 		repoRepo:    repoRepo,
+		streakRepo:  streakRepo,
 		ghService:   ghService,
 		authService: authService,
 		rankService: rankService,
@@ -71,7 +74,7 @@ func (h *UserHandler) Ranking(c *echo.Context) error {
 	}
 
 	sort := c.QueryParam("sort")
-	validSorts := map[string]bool{"score": true, "commits": true, "prs": true, "issues": true, "reviews": true, "stars": true, "forks": true}
+	validSorts := map[string]bool{"score": true, "commits": true, "prs": true, "issues": true, "reviews": true, "stars": true, "forks": true, "current_streak": true, "longest_streak": true}
 	if !validSorts[sort] {
 		sort = "score"
 	}
@@ -131,6 +134,10 @@ func getSortValue(row model.UserRankingRow, sort string) float64 {
 		return float64(row.TotalStars)
 	case "forks":
 		return float64(row.TotalForks)
+	case "current_streak":
+		return float64(row.CurrentStreak)
+	case "longest_streak":
+		return float64(row.LongestStreak)
 	default:
 		return row.Score
 	}
@@ -149,6 +156,7 @@ func (h *UserHandler) Detail(c *echo.Context) error {
 	ranking, _ := h.userRepo.GetRanking(c.Request().Context(), user.ID)
 	contributions, _ := h.contribRepo.GetByUser(c.Request().Context(), user.ID)
 	topRepos, _ := h.userRepo.GetTopRepos(c.Request().Context(), user.ID, 10)
+	streak, _ := h.streakRepo.GetByUser(c.Request().Context(), user.ID)
 
 	if contributions == nil {
 		contributions = []model.ContributionYear{}
@@ -166,6 +174,7 @@ func (h *UserHandler) Detail(c *echo.Context) error {
 		Followers:     user.Followers,
 		Following:     user.Following,
 		PublicRepos:   user.PublicRepos,
+		Streak:        streak,
 		Contributions: contributions,
 		TopRepos:      topRepos,
 		SyncedAt:      &user.UpdatedAt,
@@ -227,7 +236,7 @@ func (h *UserHandler) Sync(c *echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	contributions, err := h.ghService.GetContributions(ctx, ghToken, user.Login)
+	contributions, currentStreak, longestStreak, err := h.ghService.GetContributions(ctx, ghToken, user.Login)
 	if err != nil {
 		return c.JSON(http.StatusBadGateway, model.ErrorResponse{Code: "github_error", Message: "failed to fetch contributions"})
 	}
@@ -239,6 +248,10 @@ func (h *UserHandler) Sync(c *echo.Context) error {
 
 	if err := h.contribRepo.UpsertMany(ctx, userID, contributions); err != nil {
 		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Code: "db_error", Message: "failed to save contributions"})
+	}
+
+	if err := h.streakRepo.Upsert(ctx, userID, currentStreak, longestStreak); err != nil {
+		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Code: "db_error", Message: "failed to save streak"})
 	}
 
 	var repoModels []model.Repository

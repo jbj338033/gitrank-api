@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"log/slog"
+
 	"github.com/jbj338033/gitrank-api/internal/config"
 	"github.com/jbj338033/gitrank-api/internal/model"
 	"github.com/jbj338033/gitrank-api/internal/repository"
@@ -23,6 +25,7 @@ type AuthHandler struct {
 	userRepo    *repository.UserRepository
 	contribRepo *repository.ContributionRepository
 	repoRepo    *repository.RepoRepository
+	streakRepo  *repository.StreakRepository
 	rankService *service.RankingService
 }
 
@@ -33,6 +36,7 @@ func NewAuthHandler(
 	userRepo *repository.UserRepository,
 	contribRepo *repository.ContributionRepository,
 	repoRepo *repository.RepoRepository,
+	streakRepo *repository.StreakRepository,
 	rankService *service.RankingService,
 ) *AuthHandler {
 	return &AuthHandler{
@@ -42,6 +46,7 @@ func NewAuthHandler(
 		userRepo:    userRepo,
 		contribRepo: contribRepo,
 		repoRepo:    repoRepo,
+		streakRepo:  streakRepo,
 		rankService: rankService,
 	}
 }
@@ -171,19 +176,26 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 	now := time.Now()
 	currentYear := now.Year()
 
+	var allDays []service.ContributionDay
 	for y := currentYear; y >= currentYear-4; y-- {
 		sseEvent(w, f, "status", statusMsg{Step: "contributions", Message: fmt.Sprintf("%d년 기여 내역 수집 중...", y)})
 
-		cy, err := h.ghService.GetContributionsByYear(ctx, token, ghUser.Login, y)
+		cy, days, err := h.ghService.GetContributionsByYear(ctx, token, ghUser.Login, y)
 		if err != nil {
 			sseEvent(w, f, "error", map[string]string{"step": "contributions", "message": "failed to fetch contributions"})
 			return h.finishSSE(w, f, ghUser)
 		}
+		allDays = append(allDays, days...)
 
 		if err := h.contribRepo.UpsertMany(ctx, ghUser.ID, []model.ContributionYear{*cy}); err != nil {
 			sseEvent(w, f, "error", map[string]string{"step": "contributions", "message": "failed to save contributions"})
 			return h.finishSSE(w, f, ghUser)
 		}
+	}
+
+	currentStreak, longestStreak := service.CalcStreaks(allDays, now)
+	if err := h.streakRepo.Upsert(ctx, ghUser.ID, currentStreak, longestStreak); err != nil {
+		slog.Error("failed to save streak", "user", ghUser.Login, "error", err)
 	}
 
 	sseEvent(w, f, "status", statusMsg{Step: "repositories", Message: "레포지토리 수집 중..."})
@@ -216,8 +228,12 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 
 	sseEvent(w, f, "status", statusMsg{Step: "ranking", Message: "랭킹 계산 중..."})
 
-	_ = h.rankService.RecalculateUser(ctx, ghUser.ID)
-	_ = h.rankService.RecalculateUserRepos(ctx, ghUser.ID)
+	if err := h.rankService.RecalculateUser(ctx, ghUser.ID); err != nil {
+		slog.Error("failed to recalculate user ranking", "user", ghUser.Login, "error", err)
+	}
+	if err := h.rankService.RecalculateUserRepos(ctx, ghUser.ID); err != nil {
+		slog.Error("failed to recalculate repo rankings", "user", ghUser.Login, "error", err)
+	}
 	_ = h.userRepo.UpdateSyncedAt(ctx, ghUser.ID)
 
 	return h.finishSSE(w, f, ghUser)

@@ -6,12 +6,18 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/jbj338033/gitrank-api/internal/model"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 )
+
+type ContributionDay struct {
+	Date  time.Time
+	Count int
+}
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
@@ -119,7 +125,7 @@ func (s *GitHubService) GetUser(ctx context.Context, token string) (*GitHubUser,
 	}, nil
 }
 
-func (s *GitHubService) GetContributionsByYear(ctx context.Context, token string, login string, year int) (*model.ContributionYear, error) {
+func (s *GitHubService) GetContributionsByYear(ctx context.Context, token string, login string, year int) (*model.ContributionYear, []ContributionDay, error) {
 	src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	httpClient := oauth2.NewClient(ctx, src)
 	client := githubv4.NewClient(httpClient)
@@ -139,6 +145,14 @@ func (s *GitHubService) GetContributionsByYear(ctx context.Context, token string
 				TotalPullRequestContributions       int
 				TotalIssueContributions             int
 				TotalPullRequestReviewContributions int
+				ContributionCalendar                struct {
+					Weeks []struct {
+						ContributionDays []struct {
+							Date              string
+							ContributionCount int
+						}
+					}
+				}
 			} `graphql:"contributionsCollection(from: $from, to: $to)"`
 		} `graphql:"user(login: $login)"`
 	}
@@ -150,33 +164,99 @@ func (s *GitHubService) GetContributionsByYear(ctx context.Context, token string
 	}
 
 	if err := client.Query(ctx, &query, vars); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cc := query.User.ContributionsCollection
+
+	var days []ContributionDay
+	for _, w := range cc.ContributionCalendar.Weeks {
+		for _, d := range w.ContributionDays {
+			t, err := time.Parse("2006-01-02", d.Date)
+			if err != nil {
+				continue
+			}
+			days = append(days, ContributionDay{Date: t, Count: d.ContributionCount})
+		}
+	}
+
 	return &model.ContributionYear{
 		Year:         year,
 		Commits:      cc.TotalCommitContributions + cc.RestrictedContributionsCount,
 		PullRequests: cc.TotalPullRequestContributions,
 		Issues:       cc.TotalIssueContributions,
 		CodeReviews:  cc.TotalPullRequestReviewContributions,
-	}, nil
+	}, days, nil
 }
 
-func (s *GitHubService) GetContributions(ctx context.Context, token string, login string) ([]model.ContributionYear, error) {
+func (s *GitHubService) GetContributions(ctx context.Context, token string, login string) ([]model.ContributionYear, int, int, error) {
 	now := time.Now()
 	currentYear := now.Year()
 	var results []model.ContributionYear
+	var allDays []ContributionDay
 
 	for y := currentYear; y >= currentYear-4; y-- {
-		cy, err := s.GetContributionsByYear(ctx, token, login, y)
+		cy, days, err := s.GetContributionsByYear(ctx, token, login, y)
 		if err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
 		results = append(results, *cy)
+		allDays = append(allDays, days...)
 	}
 
-	return results, nil
+	current, longest := CalcStreaks(allDays, now)
+	return results, current, longest, nil
+}
+
+func CalcStreaks(days []ContributionDay, today time.Time) (current, longest int) {
+	if len(days) == 0 {
+		return 0, 0
+	}
+
+	sort.Slice(days, func(i, j int) bool {
+		return days[i].Date.Before(days[j].Date)
+	})
+
+	streak := 0
+	for _, d := range days {
+		if d.Count > 0 {
+			streak++
+			if streak > longest {
+				longest = streak
+			}
+		} else {
+			streak = 0
+		}
+	}
+
+	todayDate := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+	yesterday := todayDate.AddDate(0, 0, -1)
+
+	start := todayDate
+	if len(days) > 0 {
+		last := days[len(days)-1]
+		if last.Date.Equal(todayDate) && last.Count == 0 {
+			start = yesterday
+		}
+	}
+
+	for i := len(days) - 1; i >= 0; i-- {
+		if days[i].Date.After(start) {
+			continue
+		}
+		if days[i].Date.Equal(start) {
+			if days[i].Count > 0 {
+				current++
+				start = start.AddDate(0, 0, -1)
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+
+	return current, longest
 }
 
 func (s *GitHubService) GetRepositories(ctx context.Context, token string, login string) ([]GitHubRepo, error) {
