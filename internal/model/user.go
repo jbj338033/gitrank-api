@@ -30,18 +30,20 @@ type UserRanking struct {
 }
 
 type UserRankingRow struct {
-	Rank         int     `json:"rank"`
-	Login        string  `json:"login"`
-	Name         *string `json:"name"`
-	AvatarURL    *string `json:"avatar_url"`
-	Score        float64 `json:"score"`
-	TotalCommits int     `json:"total_commits"`
-	TotalPRs     int     `json:"total_prs"`
-	TotalIssues  int     `json:"total_issues"`
-	TotalReviews int     `json:"total_reviews"`
-	TotalStars   int     `json:"total_stars"`
-	TotalForks   int     `json:"total_forks"`
-	UserID       int64   `json:"-"`
+	Rank           int     `json:"rank"`
+	Login          string  `json:"login"`
+	Name           *string `json:"name"`
+	AvatarURL      *string `json:"avatar_url"`
+	Score          float64 `json:"score"`
+	TotalCommits   int     `json:"total_commits"`
+	TotalPRs       int     `json:"total_prs"`
+	TotalIssues    int     `json:"total_issues"`
+	TotalReviews   int     `json:"total_reviews"`
+	TotalStars     int     `json:"total_stars"`
+	TotalForks     int     `json:"total_forks"`
+	CurrentStreak  int     `json:"current_streak"`
+	LongestStreak  int     `json:"longest_streak"`
+	UserID         int64   `json:"-"`
 }
 
 type UserDetail struct {
@@ -54,9 +56,16 @@ type UserDetail struct {
 	Following     int                `json:"following"`
 	PublicRepos   int                `json:"public_repos"`
 	Ranking       *UserRankingInfo   `json:"ranking"`
+	Streak        *StreakInfo         `json:"streak"`
 	Contributions []ContributionYear `json:"contributions"`
 	TopRepos      []RepoSummary      `json:"top_repositories"`
 	SyncedAt      *time.Time         `json:"synced_at"`
+}
+
+type StreakInfo struct {
+	CurrentStreak int  `json:"current_streak"`
+	LongestStreak int  `json:"longest_streak"`
+	Rank          *int `json:"rank"`
 }
 
 type UserRankingInfo struct {
