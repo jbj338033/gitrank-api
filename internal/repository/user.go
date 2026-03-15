@@ -19,8 +19,8 @@ func NewUserRepository(pool *pgxpool.Pool) *UserRepository {
 
 func (r *UserRepository) Upsert(ctx context.Context, u *model.User) error {
 	query := `
-		INSERT INTO users (id, login, name, avatar_url, bio, followers, following, public_repos, access_token)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO users (id, login, name, avatar_url, bio, followers, following, public_repos, access_token, github_created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (id) DO UPDATE SET
 			login = EXCLUDED.login,
 			name = EXCLUDED.name,
@@ -30,11 +30,12 @@ func (r *UserRepository) Upsert(ctx context.Context, u *model.User) error {
 			following = EXCLUDED.following,
 			public_repos = EXCLUDED.public_repos,
 			access_token = EXCLUDED.access_token,
+			github_created_at = EXCLUDED.github_created_at,
 			updated_at = NOW()`
 
 	_, err := r.pool.Exec(ctx, query,
 		u.ID, u.Login, u.Name, u.AvatarURL, u.Bio,
-		u.Followers, u.Following, u.PublicRepos, u.AccessToken,
+		u.Followers, u.Following, u.PublicRepos, u.AccessToken, u.GithubCreatedAt,
 	)
 	return err
 }
@@ -42,11 +43,11 @@ func (r *UserRepository) Upsert(ctx context.Context, u *model.User) error {
 func (r *UserRepository) GetByLogin(ctx context.Context, login string) (*model.User, error) {
 	var u model.User
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, login, name, avatar_url, bio, followers, following, public_repos, access_token, created_at, updated_at
+		`SELECT id, login, name, avatar_url, bio, followers, following, public_repos, access_token, github_created_at, created_at, updated_at
 		 FROM users WHERE login = $1`, login,
 	).Scan(&u.ID, &u.Login, &u.Name, &u.AvatarURL, &u.Bio,
 		&u.Followers, &u.Following, &u.PublicRepos, &u.AccessToken,
-		&u.CreatedAt, &u.UpdatedAt)
+		&u.GithubCreatedAt, &u.CreatedAt, &u.UpdatedAt)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -56,11 +57,11 @@ func (r *UserRepository) GetByLogin(ctx context.Context, login string) (*model.U
 func (r *UserRepository) GetByID(ctx context.Context, id int64) (*model.User, error) {
 	var u model.User
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, login, name, avatar_url, bio, followers, following, public_repos, access_token, created_at, updated_at
+		`SELECT id, login, name, avatar_url, bio, followers, following, public_repos, access_token, github_created_at, created_at, updated_at
 		 FROM users WHERE id = $1`, id,
 	).Scan(&u.ID, &u.Login, &u.Name, &u.AvatarURL, &u.Bio,
 		&u.Followers, &u.Following, &u.PublicRepos, &u.AccessToken,
-		&u.CreatedAt, &u.UpdatedAt)
+		&u.GithubCreatedAt, &u.CreatedAt, &u.UpdatedAt)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -192,7 +193,7 @@ func (r *UserRepository) GetTopRepos(ctx context.Context, userID int64, limit in
 
 func (r *UserRepository) ListAllWithToken(ctx context.Context) ([]model.User, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, login, name, avatar_url, bio, followers, following, public_repos, access_token, created_at, updated_at
+		`SELECT id, login, name, avatar_url, bio, followers, following, public_repos, access_token, github_created_at, created_at, updated_at
 		 FROM users WHERE access_token IS NOT NULL ORDER BY updated_at ASC`)
 	if err != nil {
 		return nil, err
@@ -204,7 +205,7 @@ func (r *UserRepository) ListAllWithToken(ctx context.Context) ([]model.User, er
 		var u model.User
 		if err := rows.Scan(&u.ID, &u.Login, &u.Name, &u.AvatarURL, &u.Bio,
 			&u.Followers, &u.Following, &u.PublicRepos, &u.AccessToken,
-			&u.CreatedAt, &u.UpdatedAt); err != nil {
+			&u.GithubCreatedAt, &u.CreatedAt, &u.UpdatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, u)
