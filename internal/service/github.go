@@ -28,14 +28,15 @@ func NewGitHubService() *GitHubService {
 }
 
 type GitHubUser struct {
-	ID          int64
-	Login       string
-	Name        *string
-	AvatarURL   *string
-	Bio         *string
-	Followers   int
-	Following   int
-	PublicRepos int
+	ID              int64
+	Login           string
+	Name            *string
+	AvatarURL       *string
+	Bio             *string
+	Followers       int
+	Following       int
+	PublicRepos     int
+	GithubCreatedAt time.Time
 }
 
 type GitHubRepo struct {
@@ -108,20 +109,27 @@ func (s *GitHubService) GetUser(ctx context.Context, token string) (*GitHubUser,
 		Followers   int     `json:"followers"`
 		Following   int     `json:"following"`
 		PublicRepos int     `json:"public_repos"`
+		CreatedAt   string  `json:"created_at"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
 		return nil, err
 	}
 
+	githubCreatedAt, err := time.Parse(time.RFC3339, raw.CreatedAt)
+	if err != nil || githubCreatedAt.Year() < 2008 {
+		githubCreatedAt = time.Date(2008, 1, 1, 0, 0, 0, 0, time.UTC)
+	}
+
 	return &GitHubUser{
-		ID:          raw.ID,
-		Login:       raw.Login,
-		Name:        raw.Name,
-		AvatarURL:   raw.AvatarURL,
-		Bio:         raw.Bio,
-		Followers:   raw.Followers,
-		Following:   raw.Following,
-		PublicRepos: raw.PublicRepos,
+		ID:              raw.ID,
+		Login:           raw.Login,
+		Name:            raw.Name,
+		AvatarURL:       raw.AvatarURL,
+		Bio:             raw.Bio,
+		Followers:       raw.Followers,
+		Following:       raw.Following,
+		PublicRepos:     raw.PublicRepos,
+		GithubCreatedAt: githubCreatedAt,
 	}, nil
 }
 
@@ -189,13 +197,15 @@ func (s *GitHubService) GetContributionsByYear(ctx context.Context, token string
 	}, days, nil
 }
 
-func (s *GitHubService) GetContributions(ctx context.Context, token string, login string) ([]model.ContributionYear, int, int, error) {
+func (s *GitHubService) GetContributions(ctx context.Context, token, login string, githubCreatedAt time.Time) ([]model.ContributionYear, int, int, error) {
 	now := time.Now()
 	currentYear := now.Year()
+	fromYear := githubCreatedAt.Year()
+
 	var results []model.ContributionYear
 	var allDays []ContributionDay
 
-	for y := currentYear; y >= currentYear-4; y-- {
+	for y := currentYear; y >= fromYear; y-- {
 		cy, days, err := s.GetContributionsByYear(ctx, token, login, y)
 		if err != nil {
 			return nil, 0, 0, err

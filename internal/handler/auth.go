@@ -109,15 +109,16 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 	}
 
 	u := &model.User{
-		ID:          ghUser.ID,
-		Login:       ghUser.Login,
-		Name:        ghUser.Name,
-		AvatarURL:   ghUser.AvatarURL,
-		Bio:         ghUser.Bio,
-		Followers:   ghUser.Followers,
-		Following:   ghUser.Following,
-		PublicRepos: ghUser.PublicRepos,
-		AccessToken: &encrypted,
+		ID:              ghUser.ID,
+		Login:           ghUser.Login,
+		Name:            ghUser.Name,
+		AvatarURL:       ghUser.AvatarURL,
+		Bio:             ghUser.Bio,
+		Followers:       ghUser.Followers,
+		Following:       ghUser.Following,
+		PublicRepos:     ghUser.PublicRepos,
+		AccessToken:     &encrypted,
+		GithubCreatedAt: ghUser.GithubCreatedAt,
 	}
 	if err := h.userRepo.Upsert(c.Request().Context(), u); err != nil {
 		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{Code: "internal_error", Message: "failed to save user"})
@@ -175,9 +176,10 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 	ctx := c.Request().Context()
 	now := time.Now()
 	currentYear := now.Year()
+	fromYear := ghUser.GithubCreatedAt.Year()
 
 	var allDays []service.ContributionDay
-	for y := currentYear; y >= currentYear-4; y-- {
+	for y := currentYear; y >= fromYear; y-- {
 		sseEvent(w, f, "status", statusMsg{Step: "contributions", Message: fmt.Sprintf("%d년 기여 내역 수집 중...", y)})
 
 		cy, days, err := h.ghService.GetContributionsByYear(ctx, token, ghUser.Login, y)
