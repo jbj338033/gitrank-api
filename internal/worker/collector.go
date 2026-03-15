@@ -72,7 +72,7 @@ func (c *Collector) collect(ctx context.Context) {
 			continue
 		}
 
-		contributions, currentStreak, longestStreak, err := c.ghService.GetContributions(ctx, token, user.Login)
+		contributions, currentStreak, longestStreak, err := c.ghService.GetContributions(ctx, token, user.Login, user.GithubCreatedAt)
 		if err != nil {
 			slog.Error("failed to fetch contributions", "user", user.Login, "error", err)
 			continue

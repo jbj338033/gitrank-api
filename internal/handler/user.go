@@ -236,7 +236,7 @@ func (h *UserHandler) Sync(c *echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	contributions, currentStreak, longestStreak, err := h.ghService.GetContributions(ctx, ghToken, user.Login)
+	contributions, currentStreak, longestStreak, err := h.ghService.GetContributions(ctx, ghToken, user.Login, user.GithubCreatedAt)
 	if err != nil {
 		return c.JSON(http.StatusBadGateway, model.ErrorResponse{Code: "github_error", Message: "failed to fetch contributions"})
 	}

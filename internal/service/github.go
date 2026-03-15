@@ -197,13 +197,15 @@ func (s *GitHubService) GetContributionsByYear(ctx context.Context, token string
 	}, days, nil
 }
 
-func (s *GitHubService) GetContributions(ctx context.Context, token string, login string) ([]model.ContributionYear, int, int, error) {
+func (s *GitHubService) GetContributions(ctx context.Context, token, login string, githubCreatedAt time.Time) ([]model.ContributionYear, int, int, error) {
 	now := time.Now()
 	currentYear := now.Year()
+	fromYear := githubCreatedAt.Year()
+
 	var results []model.ContributionYear
 	var allDays []ContributionDay
 
-	for y := currentYear; y >= currentYear-4; y-- {
+	for y := currentYear; y >= fromYear; y-- {
 		cy, days, err := s.GetContributionsByYear(ctx, token, login, y)
 		if err != nil {
 			return nil, 0, 0, err
