@@ -90,27 +90,25 @@ func (c *Collector) collect(ctx context.Context) {
 		repos, err := c.ghService.GetRepositories(ctx, token, user.Login)
 		if err != nil {
 			slog.Error("failed to fetch repositories", "user", user.Login, "error", err)
-			continue
-		}
+		} else {
+			var repoModels []model.Repository
+			for _, r := range repos {
+				repoModels = append(repoModels, model.Repository{
+					ID:          r.ID,
+					OwnerID:     user.ID,
+					FullName:    r.FullName,
+					Description: r.Description,
+					Language:    r.Language,
+					Stars:       r.Stars,
+					Forks:       r.Forks,
+					OpenIssues:  r.OpenIssues,
+					Watchers:    r.Watchers,
+				})
+			}
 
-		var repoModels []model.Repository
-		for _, r := range repos {
-			repoModels = append(repoModels, model.Repository{
-				ID:          r.ID,
-				OwnerID:     user.ID,
-				FullName:    r.FullName,
-				Description: r.Description,
-				Language:    r.Language,
-				Stars:       r.Stars,
-				Forks:       r.Forks,
-				OpenIssues:  r.OpenIssues,
-				Watchers:    r.Watchers,
-			})
-		}
-
-		if err := c.repoRepo.UpsertMany(ctx, repoModels); err != nil {
-			slog.Error("failed to upsert repositories", "user", user.Login, "error", err)
-			continue
+			if err := c.repoRepo.UpsertMany(ctx, repoModels); err != nil {
+				slog.Error("failed to upsert repositories", "user", user.Login, "error", err)
+			}
 		}
 
 		if err := c.rankService.RecalculateUser(ctx, user.ID); err != nil {
